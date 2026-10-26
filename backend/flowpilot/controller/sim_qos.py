@@ -85,6 +85,7 @@ class FlowPilotQoS(RouterQoS):
         self.autorate.reset(down, up, world.link.down_mbps * 1e6, world.link.up_mbps * 1e6)
         devices = {d.ip: d.name for d in world.devices.values()}
         self.brain = FlowPilotBrain(devices, self.clf, intent=self.intent)
+        self._last_auto = self._last_ctrl = self._last_feat = world.sim.now
 
     # ---------------------------------------------------------------- control loop
     def tick(self, world: HomeWorld, now: float) -> None:

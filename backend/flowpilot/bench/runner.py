@@ -144,6 +144,12 @@ def summarize_apps(apps: dict, series: list[dict]) -> dict:
         for b in bulk:
             mos[b["app_id"]] = M.bulk_mos(b["avg_throughput_mbps"], fair_up if b.get("upload") else fair)
     vals = [v for v in mos.values() if v is not None]
+    inter = [a.get("mos") for a in apps.values()
+             if a["app_type"] in (App.GAMING, App.VIDEO_CALL, App.STREAMING, App.WEB) and a.get("mos") is not None]
+    # what people actively perceive (game, call, video, browsing); bulk transfers are reported
+    # separately as throughput because their "experience" is completion time, not interactivity
+    out["interactive_mos"] = sum(inter) / len(inter) if inter else None
+    out["min_interactive_mos"] = min(inter) if inter else None
     out["mos_by_app"] = mos
     out["qoe_fairness"] = M.qoe_fairness(vals)
     out["jain_qoe"] = M.jain([(v - 1) / 4 for v in vals])

@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: flowpilot
+      POSTGRES_PASSWORD: flowpilot
+      POSTGRES_DB: flowpilot
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowpilot"]
+      interval: 3s
+      retries: 20
+
+  # Simulator mode: runs anywhere (Linux, macOS, Windows)
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://flowpilot:flowpilot@db:5432/flowpilot
+    ports: ["8000:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+
+  # Real-kernel testbed mode (Linux hosts only): network namespaces, tc, nftables and
+  # conntrack need a privileged container. Start with: docker compose --profile testbed up
+  api-testbed:
+    profiles: ["testbed"]
+    build: .
+    privileged: true
+    environment:
+      DATABASE_URL: postgresql+psycopg://flowpilot:flowpilot@db:5432/flowpilot
+      PORT: "8001"
+    ports: ["8001:8001"]
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  pgdata:

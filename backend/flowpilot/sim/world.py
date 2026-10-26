@@ -82,6 +82,12 @@ class RouterQoS:
     def install(self, world: "HomeWorld") -> None:
         raise NotImplementedError
 
+    def uninstall(self, world: "HomeWorld") -> None:
+        """Release resources (probes) before the router is switched to another policy."""
+        probe = getattr(self, "probe", None)
+        if probe is not None:
+            probe.stop()
+
     def tick(self, world: "HomeWorld", now: float) -> None:
         pass
 
@@ -181,6 +187,14 @@ class HomeWorld:
         self.monitor.observe(f.key, f.proto, f.lan_ip, f.wan_ip, pkt.up, pkt.size, now)
 
     # ---------------------------------------------------------------------- capacity
+    def set_qos(self, qos: RouterQoS) -> None:
+        """Hot-swap the router's queue management (live A/B demos)."""
+        self.qos.uninstall(self)
+        for f in self.flows.values():
+            f.tc = 0
+        self.qos = qos
+        qos.install(self)
+
     def set_capacity(self, down_mbps: Optional[float] = None, up_mbps: Optional[float] = None) -> None:
         if down_mbps is not None:
             self.capacity_down = down_mbps * 1e6
@@ -238,9 +252,17 @@ class ReflectorProbe:
         self.samples: list[tuple[float, float, float]] = []  # (t, owd_up_ms, owd_down_ms)
         self.sent = 0
         self.recv = 0
+        self.active = True
         world.sim.after(0.01, self._tick)
 
+    def stop(self) -> None:
+        self.active = False
+        if self._back in self.w.probe_handlers:
+            self.w.probe_handlers.remove(self._back)
+
     def _tick(self) -> None:
+        if not self.active:
+            return
         p = Packet(self.flow, 64, K_UDP, True, self.w.sim.now, seq=self.seq)
         self.seq += 1
         self.sent += 1

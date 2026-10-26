@@ -58,6 +58,7 @@ class SqmQoS(RouterQoS):
         if self.autorate is not None:
             self.probe = ReflectorProbe(world)
             self.autorate.reset(down, up, world.link.down_mbps * 1e6, world.link.up_mbps * 1e6)
+            self._last = world.sim.now
 
     def tick(self, world: HomeWorld, now: float) -> None:
         if self.autorate is None or now - self._last < self.autorate.interval - 1e-9:
