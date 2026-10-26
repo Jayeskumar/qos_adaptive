@@ -9,9 +9,10 @@ All sockets are created inside the right namespace (device namespace for the cli
 the host's CLOCK_MONOTONIC, so one-way delays are measured exactly.
 
 Base path delay: the Internet path delay beyond the ISP (e.g. 12 ms to the game server)
-is applied with netem when the kernel has it; otherwise it is added analytically to the
-measured delays (`extra_owd_ms`), which leaves all queueing effects - the thing under
-test - fully real.
+is applied for real by the TUN delay line (or netem); without either it is added
+analytically to the measured delays (`extra_owd_ms`), which leaves all queueing effects -
+the thing under test - fully real. `base_owd_ms` is the base path delay itself, however it
+is applied: "added latency" and the SLOs are measured against it, as in the simulator.
 """
 from __future__ import annotations
 
@@ -128,11 +129,13 @@ class Env:
 
     def __init__(self, dev_ns: Callable[[str], str], dev_ip: Callable[[str], str], srv_ip: Callable[[str], str],
                  extra_owd_ms: Callable[[str], float], inet_ns: str = "fp-inet",
-                 on_flow: Optional[Callable[[tuple, str, str], None]] = None) -> None:
+                 on_flow: Optional[Callable[[tuple, str, str], None]] = None,
+                 base_owd_ms: Optional[Callable[[str], float]] = None) -> None:
         self.dev_ns = dev_ns
         self.dev_ip = dev_ip
         self.srv_ip = srv_ip
         self.extra_owd_ms = extra_owd_ms
+        self.base_owd_ms = base_owd_ms or extra_owd_ms
         self.inet_ns = inet_ns
         self.on_flow = on_flow or (lambda key, app_type, app_id: None)
 
@@ -158,8 +161,9 @@ class LiveApp:
         self.tasks: list[asyncio.Task] = []
         self.socks: list[socket.socket] = []
         self.endpoints: list[UdpEndpoint] = []
-        self.extra = env.extra_owd_ms(server)
-        self.base_rtt_ms = 2 * self.extra
+        self.extra = env.extra_owd_ms(server)  # added analytically to measurements (0 with a delay line)
+        self.base_owd = env.base_owd_ms(server)  # the base path delay, however it is applied
+        self.base_rtt_ms = 2 * self.base_owd
 
     def register(self, proto: str, sock: socket.socket) -> None:
         lip, lport = sock.getsockname()[:2]
@@ -344,6 +348,7 @@ class LiveVideoCall(LiveApp):
         self.socks += [self.psock, self.csock]
         self.register("udp", self.csock)
         # client sends uplink media, peer sends downlink media
+        self.mos_hist: list[float] = []
         self.cli = _Side(float(p.get("max_up_kbps", 3000)), fps)
         self.peer = _Side(float(p.get("max_down_kbps", 2500)), fps)
         self.cli.transport = await udp(self.csock, lambda d, a, t: self._rx(self.cli, d, a, t, False))
@@ -467,7 +472,9 @@ class LiveVideoCall(LiveApp):
                    jitter_ms=max(dn["owd"]["jitter_ms"], up["owd"]["jitter_ms"]),
                    loss_pct=max(dn["owd"]["loss_pct"], up["owd"]["loss_pct"]), freeze_pct=freeze,
                    video_kbps_down=self.peer.rate, video_kbps_up=self.cli.rate,
-                   base_owd_ms=self.extra, mos=mos)
+                   base_owd_ms=self.base_owd, mos=mos)
+        if mos is not None and self.active:
+            self.mos_hist.append(mos)
         return out
 
     def summary(self) -> dict:
@@ -488,11 +495,16 @@ class LiveVideoCall(LiveApp):
                 mos_all.append(max(1.0, v["mos"] - 0.02 * freeze))
         p95 = [res[d]["owd_ms"]["p95"] for d in res if res[d]["owd_ms"]["p95"] is not None]
         p99 = [res[d]["owd_ms"]["p99"] for d in res if res[d]["owd_ms"]["p99"] is not None]
-        s.update(directions=res, mos=min(mos_all) if mos_all else None,
+        # call MOS = mean of the per-second E-model MOS: an adaptive jitter buffer re-centres on the
+        # current delay within seconds, so quality is judged second by second, not against one
+        # run-wide median (which would count slow delay drift as late loss)
+        hist = getattr(self, "mos_hist", [])
+        run_mos = sum(hist) / len(hist) if hist else (min(mos_all) if mos_all else None)
+        s.update(directions=res, mos=run_mos, mos_whole_run=min(mos_all) if mos_all else None,
                  loss_pct=max(res["down"]["loss_pct"], res["up"]["loss_pct"]),
                  owd_p95_ms=max(p95) if p95 else None, owd_p99_ms=max(p99) if p99 else None,
-                 added_latency_p95_ms=(max(p95) - self.extra) if p95 else None,
-                 added_latency_p99_ms=(max(p99) - self.extra) if p99 else None,
+                 added_latency_p95_ms=(max(p95) - self.base_owd) if p95 else None,
+                 added_latency_p99_ms=(max(p99) - self.base_owd) if p99 else None,
                  freeze_pct=max(res["down"]["freeze_pct"], res["up"]["freeze_pct"]),
                  video_kbps_down=res["down"]["avg_video_kbps"], video_kbps_up=res["up"]["avg_video_kbps"],
                  jitter_ms=max(res["down"]["jitter_ms"], res["up"]["jitter_ms"]))

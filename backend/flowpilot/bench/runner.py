@@ -200,17 +200,18 @@ def flow_accuracy(w: HomeWorld, brain) -> dict:
     """Ground-truth check of the controller's labels (byte-weighted and per flow)."""
     tot = ok = 0
     wb = wok = 0
+    conf: dict = {}
     by_key = w.flow_by_key
-    seen = 0
-    for key, fs in brain.flows.items():
+    for key, label, b in brain.labelled_flows():
         f = by_key.get(key)
-        if f is None or fs.label is None:
+        if f is None:
             continue
-        seen += 1
-        b = fs.b_up + fs.b_down
         tot += 1
         wb += b
-        if fs.label == f.app_type:
+        conf.setdefault(f.app_type, {}).setdefault(label, 0)
+        conf[f.app_type][label] += 1
+        if label == f.app_type:
             ok += 1
             wok += b
-    return {"flows": tot, "accuracy": ok / tot if tot else None, "byte_accuracy": wok / wb if wb else None}
+    return {"flows": tot, "accuracy": ok / tot if tot else None, "byte_accuracy": wok / wb if wb else None,
+            "confusion": conf}

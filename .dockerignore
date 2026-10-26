@@ -1,0 +1,13 @@
+.git
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+frontend/node_modules
+frontend/dist
+backend/data/*.npz
+backend/data/*.log
+backend/results/*.log
+backend/results/kernel_test_*.json
+**/*.db
+**/*.sqlite
+.env

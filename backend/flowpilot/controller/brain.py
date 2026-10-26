@@ -148,11 +148,12 @@ class FlowPilotBrain:
         self.weights = dict(INTENT_PRESETS[intent])
         self.headroom = headroom
         self.flows: dict[tuple, FlowState] = {}
+        self.retired: deque = deque(maxlen=4096)  # (key, label, bytes) of expired labelled flows
         self.tracks = {d: {tc: _ClassTrack() for tc in TC} for d in DIRS}
         self.last_now: Optional[float] = None
         self.decisions: deque = deque(maxlen=400)
         self.last_alloc: dict = {}
-        self.last_alloc_log = -1e9
+        self.last_alloc_log: dict = {}
         self.class_status: dict = {d: {} for d in DIRS}
         self.device_pins: dict[str, TC] = {}
         self.stats = {"classified": 0, "reclassified": 0, "demoted": 0}
@@ -425,11 +426,15 @@ class FlowPilotBrain:
     def _maybe_log_alloc(self, d: str, R: float, alloc, demands: dict, now: float) -> None:
         cur = {int(k): v.rate for k, v in alloc.classes.items() if demands[k].active}
         prev = self.last_alloc.get(d, {})
-        big = set(cur) != set(prev) or any(abs(cur[k] - prev.get(k, 0)) > 0.25 * max(prev.get(k, 1), 1) for k in cur)
-        if not big or now - self.last_alloc_log < 4.0:
+        # log only material changes, so classify / autorate / protect decisions stay visible:
+        # a class (de)activated, or a guarantee moved by > 25 % *and* > 5 % of the link
+        new_set = set(cur) != set(prev)
+        moved = any(abs(cur[k] - prev.get(k, 0)) > max(0.25 * prev.get(k, 0), 0.05 * R) for k in cur)
+        since = now - self.last_alloc_log.get(d, -1e9)
+        if not ((new_set and since >= 1.0) or (moved and since >= 10.0)):
             return
         self.last_alloc[d] = cur
-        self.last_alloc_log = now
+        self.last_alloc_log[d] = now
         parts = ", ".join(f"{CLASS_INFO[TC(k)].name} {v / 1e6:.1f}" for k, v in sorted(cur.items()))
         extra = " (call/game demand exceeds the protection cap: scaled)" if alloc.inelastic_scaled else ""
         self._log(now, "allocate", f"{'Downlink' if d == 'down' else 'Uplink'} {R / 1e6:.1f} Mb/s guaranteed: "
@@ -438,7 +443,16 @@ class FlowPilotBrain:
     def _expire(self, now: float) -> None:
         dead = [k for k, f in self.flows.items() if now - f.last_seen > 15.0]
         for k in dead:
-            del self.flows[k]
+            f = self.flows.pop(k)
+            if f.label is not None:
+                self.retired.append((k, f.label, f.b_up + f.b_down))
+
+    def labelled_flows(self):
+        """(key, label, bytes) of every flow that got a label, including flows that have ended."""
+        for k, f in self.flows.items():
+            if f.label is not None:
+                yield k, f.label, f.b_up + f.b_down
+        yield from self.retired
 
     # ------------------------------------------------------------------ views
     def flow_table(self, now: float, limit: int = 200) -> list[dict]:

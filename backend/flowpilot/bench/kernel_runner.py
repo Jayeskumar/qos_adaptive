@@ -57,6 +57,7 @@ class KernelSession:
         cfg = {"devices": {d.name: d.ip for d in self.topo.devices},
                "servers": {s.name: s.ip for s in self.topo.servers},
                "extra_owd": {s.name: self.topo.extra_owd_ms(s.name) for s in self.topo.servers},
+               "base_owd": {s.name: self.topo.path_delay_ms(s.name) for s in self.topo.servers},
                "seed": self.seed}
         self.proc = ctx.Process(target=traffic_runner.main, args=(child, cfg), daemon=True)
         self.proc.start()
@@ -137,16 +138,15 @@ class KernelSession:
         tot = ok = 0
         wb = wok = 0
         conf: dict = {}
-        for key, fs in self.ctrl.brain.flows.items():
+        for key, label, b in self.ctrl.brain.labelled_flows():
             tr = self.truth.get(key)
-            if tr is None or fs.label is None:
+            if tr is None:
                 continue
             tot += 1
-            b = fs.b_up + fs.b_down
             wb += b
-            conf.setdefault(tr[0], {}).setdefault(fs.label, 0)
-            conf[tr[0]][fs.label] += 1
-            if fs.label == tr[0]:
+            conf.setdefault(tr[0], {}).setdefault(label, 0)
+            conf[tr[0]][label] += 1
+            if label == tr[0]:
                 ok += 1
                 wok += b
         return {"flows": tot, "accuracy": ok / tot if tot else None, "byte_accuracy": wok / wb if wb else None,

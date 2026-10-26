@@ -58,7 +58,10 @@ async def lifespan(app: FastAPI):
     if not store.benchmark_rows():
         from ..db.importer import import_file
 
-        for f in sorted(RESULTS_DIR.glob("*_bench.json")):
+        files = {}
+        for f in sorted(RESULTS_DIR.glob("*_bench.json*")):
+            files.setdefault(f.name.split(".json")[0], f)  # prefer the plain file, else .gz
+        for f in files.values():
             try:
                 import_file(store, f, replace=False)
             except Exception as exc:  # pragma: no cover

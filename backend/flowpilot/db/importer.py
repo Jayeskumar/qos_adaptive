@@ -8,6 +8,7 @@ import json
 import sys
 from pathlib import Path
 
+from ..common.jsonio import read_json
 from .models import Decision, Run, Sample
 from .store import Store, _clean
 
@@ -26,7 +27,7 @@ def _row(snap: dict) -> dict:
 
 
 def import_file(store: Store, path: str | Path, replace: bool = True) -> int:
-    data = json.loads(Path(path).read_text())
+    data = read_json(path)
     results = data["results"] if isinstance(data, dict) and "results" in data else (
         data if isinstance(data, list) else [data])
     mode = results[0].get("mode", "sim") if results else "sim"

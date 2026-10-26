@@ -27,8 +27,10 @@ class TrafficRunner:
         devs = self.cfg["devices"]
         srvs = self.cfg["servers"]
         extra = self.cfg.get("extra_owd", {})
+        base = self.cfg.get("base_owd", {})
         self.env = Env(dev_ns=lambda d: f"fp-dev-{d}", dev_ip=lambda d: devs[d], srv_ip=lambda s: srvs[s],
-                       extra_owd_ms=lambda s: extra.get(s, 0.0), on_flow=self._on_flow)
+                       extra_owd_ms=lambda s: extra.get(s, 0.0), on_flow=self._on_flow,
+                       base_owd_ms=lambda s: base.get(s, extra.get(s, 0.0)))
         self.servers = [ContentServer("fp-inet", srvs[n]) for n in ("cdn", "mirror", "web", "backup")]
         self.server_tasks = [loop.create_task(s.serve()) for s in self.servers]
         loop.add_reader(self.conn.fileno(), self._readable)

@@ -122,7 +122,8 @@ def _select(net: QNet, obs: np.ndarray, feats: list, eps: float, rng, use_shield
     return a
 
 
-def train(steps: int, n_envs: int, seed: int = 0, out: Path = DEFAULT_WEIGHTS, log_every: int = 2000) -> dict:
+def train(steps: int, n_envs: int, seed: int = 0, out: Path = DEFAULT_WEIGHTS, log_every: int = 2000,
+          eval_every: int = 5000) -> dict:
     rng = np.random.default_rng(seed)
     env = FluidEnv(n_envs, seed)
     feats = [DirFeat() for _ in range(n_envs)]
@@ -137,6 +138,8 @@ def train(steps: int, n_envs: int, seed: int = 0, out: Path = DEFAULT_WEIGHTS, l
     obs, prop, cut = _observe(env, feats, heur, probes, last_tx)
     last_tx = env.tx.copy()
     hist = []
+    curve = []
+    ref = evaluate("heuristic", None, episodes=16, seed=4242)  # fixed held-out traces
     t0 = time.time()
     ep_ret = np.zeros(n_envs)
     rets: list = []
@@ -172,6 +175,12 @@ def train(steps: int, n_envs: int, seed: int = 0, out: Path = DEFAULT_WEIGHTS, l
                 opt.step(g)
                 for k in tgt.p:
                     tgt.p[k] = (1 - tau) * tgt.p[k] + tau * net.p[k]
+        if (step + 1) % eval_every == 0 or step == 0:
+            e = evaluate("rl", net, episodes=16, seed=4242)
+            curve.append({"step": step + 1, "transitions": (step + 1) * n_envs, "mean_reward": e["mean_reward"],
+                          "utilization": e["utilization"], "frac_over_20ms": e["frac_over_20ms"]})
+            print(f"  eval@{step + 1}: reward={e['mean_reward']:.3f} (heuristic {ref['mean_reward']:.3f}) "
+                  f"util={e['utilization']:.3f} >20ms={e['frac_over_20ms'] * 100:.1f}%", flush=True)
         if (step + 1) % log_every == 0:
             mr = float(np.mean(rets[-50:])) if rets else float("nan")
             hist.append({"step": step + 1, "transitions": (step + 1) * n_envs, "eps": eps,
@@ -180,7 +189,8 @@ def train(steps: int, n_envs: int, seed: int = 0, out: Path = DEFAULT_WEIGHTS, l
                   flush=True)
     out.parent.mkdir(parents=True, exist_ok=True)
     net.save(out)
-    return {"history": hist}
+    return {"history": hist, "eval_curve": curve,
+            "eval_reference": {k: ref[k] for k in ("mean_reward", "utilization", "frac_over_20ms")}}
 
 
 # ------------------------------------------------------------------------- evaluation

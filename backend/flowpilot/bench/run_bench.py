@@ -1,18 +1,17 @@
 """Run the simulator benchmark matrix in parallel and save results.
 
-    python -m flowpilot.bench.run_bench --seeds 1 2 3 --out results/sim_bench.json
+    python -m flowpilot.bench.run_bench --seeds 1 2 3 --out results/sim_bench.json.gz
 """
 from __future__ import annotations
 
 import argparse
-import json
 import multiprocessing as mp
 import os
 import time
 
 os.environ.setdefault("OMP_NUM_THREADS", "1")
-from pathlib import Path
 
+from ..common.jsonio import write_json
 from .runner import run_sim
 from .scenarios import SCENARIO_ORDER
 
@@ -51,7 +50,7 @@ def main() -> None:
     ap.add_argument("--schedulers", nargs="+", default=DEFAULT_SCHEDULERS)
     ap.add_argument("--seeds", nargs="+", type=int, default=[1])
     ap.add_argument("--workers", type=int, default=0)
-    ap.add_argument("--out", default="results/sim_bench.json")
+    ap.add_argument("--out", default="results/sim_bench.json.gz")
     a = ap.parse_args()
     jobs = [(sc, sch, sd) for sc in a.scenarios for sch in a.schedulers for sd in a.seeds]
     t0 = time.time()
@@ -64,8 +63,7 @@ def main() -> None:
                   + (f"ERROR {r['error']}" if "error" in r else
                      f"game_p99={s.get('game_rtt_p99_ms') or 0:.0f} call_p99={s.get('call_owd_p99_ms') or 0:.0f} "
                      f"mos={s.get('mean_mos') or 0:.2f}"), flush=True)
-    Path(a.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(a.out).write_text(json.dumps({"generated": time.strftime("%Y-%m-%d %H:%M:%S"), "results": results}))
+    write_json(a.out, {"generated": time.strftime("%Y-%m-%d %H:%M:%S"), "results": results})
     print(f"saved {len(results)} runs to {a.out} in {time.time() - t0:.0f}s")
 
 

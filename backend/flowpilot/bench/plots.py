@@ -18,7 +18,9 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+import matplotlib.lines  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.ticker  # noqa: E402
 import numpy as np  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap, LogNorm  # noqa: E402
 
@@ -57,9 +59,14 @@ def style() -> None:
 
 
 def load(path: str | Path | None) -> list[dict]:
-    if not path or not Path(path).exists():
+    from ..common.jsonio import read_json, resolve
+
+    if not path:
         return []
-    d = json.loads(Path(path).read_text())
+    path = resolve(path)
+    if not Path(path).exists():
+        return []
+    d = read_json(path)
     return [r for r in d.get("results", d if isinstance(d, list) else []) if "error" not in r]
 
 
@@ -340,30 +347,60 @@ def fig_alloc(sim: list[dict], out: Path, scenario: str = "evening_rush") -> Non
 
 
 def fig_kernel_vs_sim(sim: list[dict], ker: list[dict], out: Path) -> None:
-    keys = [("game_rtt_p99_ms", "Game RTT p99 (ms)"), ("call_owd_p99_ms", "Call delay p99 (ms)"),
-            ("web_plt_p50_s", "Web page load p50 (s)"), ("mean_mos", "Mean MOS")]
-    scheds = [s for s in ("fifo", "static_qos", "flowpilot") if first(ker, "evening_rush", s)]
+    """Does the digital twin predict the real kernel? One point per (scenario, policy) run on both."""
+    scheds = [s for s in ORDER if any(r["scheduler"] == s for r in ker)]
     if not scheds:
         return
-    fig, axes = plt.subplots(1, len(keys), figsize=(12.5, 3.2))
-    for ax, (k, title) in zip(axes, keys):
-        ms = agg(sim, k)
-        mk = agg(ker, k)
-        xs = np.arange(len(scheds))
-        w = 0.36
-        sv = [ms.get(("evening_rush", s), (np.nan,))[0] for s in scheds]
-        kv = [mk.get(("evening_rush", s), (np.nan,))[0] for s in scheds]
-        ax.bar(xs - w / 2 - 0.01, sv, width=w, color="#86b6ef", edgecolor=SURFACE, lw=2, label="simulator", zorder=3)
-        ax.bar(xs + w / 2 + 0.01, kv, width=w, color="#1c5cab", edgecolor=SURFACE, lw=2, label="Linux kernel testbed",
-               zorder=3)
-        ax.set_xticks(xs)
-        ax.set_xticklabels([SHORT[s] for s in scheds], fontsize=8)
-        ax.set_title(title, loc="left", fontsize=10)
-        ax.grid(axis="x", visible=False)
-    axes[0].legend(loc="upper right", fontsize=8)
-    fig.suptitle("Digital twin vs real Linux: evening-rush scenario", x=0.01, ha="left", fontsize=11.5,
-                 fontweight="bold")
-    fig.tight_layout()
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.5, 5.0))
+    errs, derr = [], []
+    for k, marker in (("game_rtt_p99_ms", "o"), ("call_owd_p99_ms", "D")):
+        ms, mk = agg(sim, k), agg(ker, k)
+        for s in scheds:
+            pts = [(ms[(sc, s)][0], mk[(sc, s)][0]) for sc in SCENARIO_ORDER if (sc, s) in ms and (sc, s) in mk]
+            if pts:
+                x, y = zip(*pts)
+                ax1.scatter(x, y, s=64 if marker == "o" else 52, marker=marker, color=COLOR[s], edgecolor=SURFACE,
+                            linewidth=1.5, zorder=3)
+                errs += [abs(b - a) / a for a, b in pts]
+    lim = (20, 1500)
+    ax1.plot(lim, lim, color=MUTED, lw=1, ls="--", zorder=2)
+    ax1.fill_between(lim, [v / 1.25 for v in lim], [v * 1.25 for v in lim], color=GRID, alpha=0.6, lw=0, zorder=1)
+    ax1.set_xscale("log")
+    ax1.set_yscale("log")
+    for ax_ in (ax1.xaxis, ax1.yaxis):
+        ax_.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
+        ax_.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    ax1.set_xticks([20, 50, 100, 200, 500, 1000])
+    ax1.set_yticks([20, 50, 100, 200, 500, 1000])
+    ax1.set_xlim(*lim)
+    ax1.set_ylim(*lim)
+    ax1.set_xlabel("digital twin (ms, mean of 3 seeds)")
+    ax1.set_ylabel("real Linux kernel (ms)")
+    ax1.set_title("99th-percentile latency: game RTT (●) and call one-way delay (◆)", loc="left", fontsize=10)
+    ax1.text(0.03, 0.95, f"median deviation {np.median(errs) * 100:.0f} %\nshaded: within ±25 %", transform=ax1.transAxes,
+             va="top", fontsize=8.5, color=INK2)
+    ms, mk = agg(sim, "interactive_mos"), agg(ker, "interactive_mos")
+    for s in scheds:
+        pts = [(ms[(sc, s)][0], mk[(sc, s)][0]) for sc in SCENARIO_ORDER if (sc, s) in ms and (sc, s) in mk]
+        if pts:
+            x, y = zip(*pts)
+            ax2.scatter(x, y, s=64, color=COLOR[s], edgecolor=SURFACE, linewidth=1.5, zorder=3)
+            derr += [abs(b - a) for a, b in pts]
+    ax2.plot((1, 5), (1, 5), color=MUTED, lw=1, ls="--", zorder=2)
+    ax2.set_xlim(1, 5)
+    ax2.set_ylim(1, 5)
+    ax2.set_xlabel("digital twin (MOS, mean of 3 seeds)")
+    ax2.set_ylabel("real Linux kernel (MOS)")
+    ax2.set_title("Interactive QoE (mean MOS of game, call, video, web)", loc="left", fontsize=10)
+    ax2.text(0.03, 0.95, f"mean |difference| {np.mean(derr):.2f} MOS", transform=ax2.transAxes, va="top",
+             fontsize=8.5, color=INK2)
+    handles = [matplotlib.lines.Line2D([], [], ls="", marker="o", ms=8, color=COLOR[s], mec=SURFACE,
+                                       label=SCHEDULER_LABELS.get(s, s)) for s in scheds]
+    fig.legend(handles=handles, loc="lower center", ncol=len(handles), frameon=False, fontsize=9,
+               bbox_to_anchor=(0.5, 0.0))
+    fig.suptitle("Digital twin vs real Linux kernel: every scenario × router run on both", x=0.01, ha="left",
+                 fontsize=11.5, fontweight="bold", color=INK)
+    fig.tight_layout(rect=(0, 0.06, 1, 0.97))
     fig.savefig(out / "sim_vs_kernel.png", dpi=160)
     plt.close(fig)
 
@@ -422,41 +459,56 @@ def fig_classifier(card: dict, out: Path) -> None:
 def fig_rl(rep: dict, out: Path) -> None:
     if not rep or "eval" not in rep:
         return
-    fig, axes = plt.subplots(1, 3, figsize=(14, 3.6))
-    hist = rep.get("training", {}).get("history", [])
+    fig, axes = plt.subplots(1, 4, figsize=(16, 3.6), gridspec_kw={"width_ratios": [1.25, 1, 1, 1]})
+    tr = rep.get("training", {})
+    curve = tr.get("eval_curve", [])
     ax = axes[0]
-    if hist:
-        x = np.array([h["transitions"] for h in hist]) / 1e6
-        y = np.array([h["episode_return"] for h in hist])
-        k = 5
-        ys = np.convolve(y, np.ones(k) / k, mode="valid")
-        ax.plot(x, y, color="#b7d3f6", lw=1)
-        ax.plot(x[k - 1:], ys, color=COLOR["flowpilot"], lw=2)
-        ax.set_xlabel("environment transitions (millions)")
-        ax.set_ylabel("episode return")
-        lo = np.percentile(y, 5)
-        ax.set_ylim(lo * 1.1 if lo < 0 else 0, max(y.max(), 1) * 1.2 + 5)
-    ax.set_title("DQN training (120 s episodes)", loc="left", fontsize=10)
+    if curve:
+        x = np.array([c["transitions"] for c in curve]) / 1e6
+        u = np.array([c["utilization"] for c in curve]) * 100
+        o = np.array([c["frac_over_20ms"] for c in curve]) * 100
+        ref = tr.get("eval_reference", {})
+        ax.plot(x, u, color=COLOR["flowpilot_rl"], lw=2, marker="o", ms=4.5, mec=SURFACE, mew=1.2)
+        ax.plot(x, o, color=COLOR["fifo"], lw=2, marker="s", ms=4.5, mec=SURFACE, mew=1.2)
+        if ref:
+            ax.axhline(ref["utilization"] * 100, color=COLOR["flowpilot_rl"], lw=1, alpha=0.45)
+            ax.axhline(ref["frac_over_20ms"] * 100, color=COLOR["fifo"], lw=1, alpha=0.45)
+        end_label(ax, x, u, "utilisation %", COLOR["flowpilot_rl"])
+        end_label(ax, x, o, "% time > 20 ms", COLOR["fifo"])
+        ax.set_ylim(0, 100)
+        ax.set_xlim(0, x[-1] * 1.45)
+        ax.set_xlabel("training transitions (millions)")
+        ax.set_ylabel("percent")
+        ax.text(0.01, 0.03, "thin lines: heuristic autorate on the same 16 held-out links", transform=ax.transAxes,
+                fontsize=7.5, color=INK2)
+    ax.set_title("Learning curve (held-out links)", loc="left", fontsize=10)
     ev = {e["policy"]: e for e in rep["eval"]}
-    kinds = [("fixed", "Fixed line +\ncongestion steps"), ("fwa", "5G FWA\n(AR + fades)"), ("lte", "LTE\nregimes")]
-    pols = [("heuristic", "Heuristic autorate", COLOR["cake_autorate"]), ("rl", "DQN agent", COLOR["flowpilot_rl"])]
-    for ax, metric, title, fmt in ((axes[1], "utilization", "Link utilisation (higher is better)", "{:.0%}"),
-                                   (axes[2], "delay_p95_ms", "Queueing delay p95, ms (lower is better)", "{:.0f}")):
+    kinds = [("fixed", "Fixed line +\ncongestion"), ("fwa", "5G FWA\n(fades)"), ("lte", "LTE\nregimes")]
+    pols = [("heuristic", "Heuristic autorate", COLOR["cake_autorate"]), ("rl", "DQN residual agent",
+                                                                          COLOR["flowpilot_rl"])]
+    panels = ((axes[1], "utilization", "Utilisation, % (higher is better)", "{:.0f}", 100.0),
+              (axes[2], "delay_p95_ms", "Queueing p95, ms (lower is better)", "{:.0f}", 1.0),
+              (axes[3], "frac_over_20ms", "Time > 20 ms, % (lower is better)", "{:.0f}", 100.0))
+    for ax, metric, title, fmt, scale in panels:
         xs = np.arange(len(kinds))
         w = 0.36
         for i, (p, name, c) in enumerate(pols):
             if p not in ev:
                 continue
-            vals = [ev[p]["by_kind"].get(k, {}).get(metric, np.nan) for k, _ in kinds]
+            vals = [ev[p]["by_kind"].get(k, {}).get(metric, np.nan) * scale for k, _ in kinds]
             ax.bar(xs + (i - 0.5) * (w + 0.02), vals, width=w, color=c, edgecolor=SURFACE, lw=2, label=name, zorder=3)
             for x, v in zip(xs + (i - 0.5) * (w + 0.02), vals):
-                ax.text(x, v, fmt.format(v), ha="center", va="bottom", fontsize=7.5, color=INK2)
+                if v == v:
+                    ax.text(x, v, fmt.format(v), ha="center", va="bottom", fontsize=7.5, color=INK2)
         ax.set_xticks(xs)
         ax.set_xticklabels([n for _, n in kinds], fontsize=8)
         ax.set_title(title, loc="left", fontsize=10)
         ax.grid(axis="x", visible=False)
-    axes[1].legend(loc="lower right", fontsize=8)
-    fig.tight_layout()
+    handles = [plt.Rectangle((0, 0), 1, 1, color=c) for _, _, c in pols]
+    fig.legend(handles, [n for _, n, _ in pols], loc="lower center", ncol=2, fontsize=8.5,
+               bbox_to_anchor=(0.62, -0.02))
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    place_labels(fig)
     fig.savefig(out / "rl_autorate.png", dpi=160)
     plt.close(fig)
 

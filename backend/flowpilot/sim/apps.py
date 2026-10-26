@@ -291,6 +291,7 @@ class VideoCallApp(SimApp):
         self.tx = {True: _RtcSender(self, True, max_up_kbps, fps=fps),
                    False: _RtcSender(self, False, max_down_kbps, fps=fps)}
         self.rx = {True: _RtcReceiver(), False: _RtcReceiver()}  # keyed by direction of media
+        self.mos_hist: list[float] = []
 
     def start(self) -> None:
         super().start()
@@ -422,6 +423,8 @@ class VideoCallApp(SimApp):
                    loss_pct=max(dn["owd"]["loss_pct"], upd["owd"]["loss_pct"]),
                    freeze_pct=freeze, video_kbps_down=dn["rate_kbps"], video_kbps_up=upd["rate_kbps"],
                    base_owd_ms=self.base_rtt_ms / 2, mos=mos)
+        if mos is not None and self.active:
+            self.mos_hist.append(mos)
         return out
 
     def summary(self) -> dict:
@@ -444,7 +447,12 @@ class VideoCallApp(SimApp):
         p95 = [res[d]["owd_ms"]["p95"] for d in res if res[d]["owd_ms"]["p95"] is not None]
         p99 = [res[d]["owd_ms"]["p99"] for d in res if res[d]["owd_ms"]["p99"] is not None]
         base = self.base_rtt_ms / 2
-        s.update(directions=res, mos=min(mos_all) if mos_all else None,
+        # call MOS = mean of the per-second E-model MOS: an adaptive jitter buffer re-centres on the
+        # current delay within seconds, so quality is judged second by second, not against one
+        # run-wide median (which would count slow delay drift as late loss)
+        hist = getattr(self, "mos_hist", [])
+        run_mos = sum(hist) / len(hist) if hist else (min(mos_all) if mos_all else None)
+        s.update(directions=res, mos=run_mos, mos_whole_run=min(mos_all) if mos_all else None,
                  loss_pct=max(res["down"]["loss_pct"], res["up"]["loss_pct"]),
                  owd_p95_ms=max(p95) if p95 else None, owd_p99_ms=max(p99) if p99 else None,
                  added_latency_p95_ms=(max(p95) - base) if p95 else None,

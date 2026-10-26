@@ -8,6 +8,8 @@ socket, and switch back. All traffic generators therefore run in one asyncio loo
 from __future__ import annotations
 
 import contextlib
+import functools
+import itertools
 import os
 import shlex
 import socket
@@ -82,9 +84,13 @@ def ns_socket(ns: str, family: int = socket.AF_INET, type_: int = socket.SOCK_DG
     return s
 
 
+_probe_ids = itertools.count()
+
+
+@functools.lru_cache(maxsize=None)
 def qdisc_supported(kind: str) -> bool:
-    """Probe whether the running kernel offers a queueing discipline."""
-    tmp = "fpprobe"
+    """Probe whether the running kernel offers a queueing discipline (cached per process)."""
+    tmp = f"fpprobe{os.getpid()}-{next(_probe_ids)}"  # unique: the API and a benchmark may probe at once
     try:
         sh(f"ip netns add {tmp}")
         nsx(tmp, "ip link add fpd0 type veth peer name fpd1")
