@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+node_modules/
+frontend/dist/
+backend/data/*.npz
+backend/data/*.log
+backend/results/*.log
+backend/results/kernel_test_*.json
+*.db
+*.sqlite
+.env

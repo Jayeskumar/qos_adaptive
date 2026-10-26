@@ -1,0 +1,301 @@
+{
+  "model": "HistGradientBoostingClassifier",
+  "trained_at": "2026-10-26 21:33:01",
+  "n_samples": 122664,
+  "n_train": 97968,
+  "n_test": 24696,
+  "n_households": 400,
+  "labels": [
+    "gaming",
+    "video_call",
+    "streaming",
+    "web",
+    "bulk",
+    "upload"
+  ],
+  "features": [
+    "is_udp",
+    "log_age_s",
+    "log_pps_up",
+    "log_pps_down",
+    "log_kbps_up",
+    "log_kbps_down",
+    "mean_size_up",
+    "mean_size_down",
+    "std_size_up",
+    "std_size_down",
+    "frac_small_up",
+    "frac_large_down",
+    "frac_large_up",
+    "frac_small_down",
+    "iat_cv_up",
+    "iat_cv_down",
+    "log_iat_mean_up_ms",
+    "log_iat_mean_down_ms",
+    "burst_cv_up",
+    "burst_cv_down",
+    "on_frac_up",
+    "on_frac_down",
+    "log_ratio_up_down",
+    "log_peak_kbps_down",
+    "log_host_flows",
+    "log_host_same_dst"
+  ],
+  "test": {
+    "accuracy": 0.9965986394557823,
+    "macro_f1": 0.9934396966528217,
+    "per_class": {
+      "gaming": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 869.0
+      },
+      "video_call": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 668.0
+      },
+      "streaming": {
+        "precision": 0.9540358744394619,
+        "recall": 0.9883855981416957,
+        "f1": 0.970907016543069,
+        "support": 861.0
+      },
+      "web": {
+        "precision": 0.9994966563601064,
+        "recall": 0.9969160152047623,
+        "f1": 0.9982046678635548,
+        "support": 13943.0
+      },
+      "bulk": {
+        "precision": 0.9908998988877654,
+        "recall": 0.9921538850923817,
+        "f1": 0.9915264955103074,
+        "support": 3951.0
+      },
+      "upload": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 4404.0
+      }
+    },
+    "confusion": [
+      [
+        869,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        668,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        851,
+        3,
+        7,
+        0
+      ],
+      [
+        0,
+        0,
+        14,
+        13900,
+        29,
+        0
+      ],
+      [
+        0,
+        0,
+        27,
+        4,
+        3920,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        4404
+      ]
+    ],
+    "by_age": [
+      {
+        "age_lo": 0,
+        "age_hi": 1.0,
+        "n": 3237,
+        "accuracy": 0.9962928637627433
+      },
+      {
+        "age_lo": 1.0,
+        "age_hi": 2.0,
+        "n": 7157,
+        "accuracy": 0.9991616599133715
+      },
+      {
+        "age_lo": 2.0,
+        "age_hi": 4.0,
+        "n": 6381,
+        "accuracy": 0.998589562764457
+      },
+      {
+        "age_lo": 4.0,
+        "age_hi": 8.0,
+        "n": 3272,
+        "accuracy": 0.9944987775061125
+      },
+      {
+        "age_lo": 8.0,
+        "age_hi": 16.0,
+        "n": 2241,
+        "accuracy": 0.9897367246764837
+      },
+      {
+        "age_lo": 16.0,
+        "age_hi": null,
+        "n": 2408,
+        "accuracy": 0.9933554817275747
+      }
+    ]
+  },
+  "random_forest": {
+    "accuracy": 0.9940071266601879,
+    "macro_f1": 0.9885674167015374
+  },
+  "rule_based": {
+    "accuracy": 0.7430758017492711,
+    "macro_f1": 0.7189952537809393
+  },
+  "importance": [
+    {
+      "feature": "frac_large_up",
+      "importance": 0.2945
+    },
+    {
+      "feature": "frac_small_up",
+      "importance": 0.21162499999999998
+    },
+    {
+      "feature": "log_host_same_dst",
+      "importance": 0.07674999999999996
+    },
+    {
+      "feature": "iat_cv_up",
+      "importance": 0.0353333333333333
+    },
+    {
+      "feature": "is_udp",
+      "importance": 0.032999999999999974
+    },
+    {
+      "feature": "std_size_up",
+      "importance": 0.028958333333333308
+    },
+    {
+      "feature": "mean_size_up",
+      "importance": 0.011041666666666616
+    },
+    {
+      "feature": "log_ratio_up_down",
+      "importance": 0.005333333333333329
+    },
+    {
+      "feature": "log_age_s",
+      "importance": 0.0035416666666666374
+    },
+    {
+      "feature": "mean_size_down",
+      "importance": 0.0020416666666666083
+    },
+    {
+      "feature": "log_kbps_up",
+      "importance": 0.0017499999999999738
+    },
+    {
+      "feature": "std_size_down",
+      "importance": 0.0012083333333333113
+    },
+    {
+      "feature": "frac_small_down",
+      "importance": 0.0007916666666666627
+    },
+    {
+      "feature": "log_pps_up",
+      "importance": 0.0002083333333333104
+    },
+    {
+      "feature": "frac_large_down",
+      "importance": 0.00012499999999998623
+    },
+    {
+      "feature": "on_frac_down",
+      "importance": 0.00012499999999995848
+    },
+    {
+      "feature": "log_host_flows",
+      "importance": 4.166666666666208e-05
+    },
+    {
+      "feature": "on_frac_up",
+      "importance": 0.0
+    },
+    {
+      "feature": "log_peak_kbps_down",
+      "importance": -0.00012500000000004174
+    },
+    {
+      "feature": "log_iat_mean_down_ms",
+      "importance": -0.00020833333333333814
+    },
+    {
+      "feature": "burst_cv_down",
+      "importance": -0.000250000000000028
+    },
+    {
+      "feature": "log_iat_mean_up_ms",
+      "importance": -0.00025000000000005573
+    },
+    {
+      "feature": "log_kbps_down",
+      "importance": -0.0003333333333333799
+    },
+    {
+      "feature": "burst_cv_up",
+      "importance": -0.0003333333333333799
+    },
+    {
+      "feature": "log_pps_down",
+      "importance": -0.0005000000000000282
+    },
+    {
+      "feature": "iat_cv_down",
+      "importance": -0.0007083333333333663
+    }
+  ],
+  "train_seconds": 11.066062927246094,
+  "inference_ms_per_64_flows": 6.335973739624023,
+  "class_counts": {
+    "gaming": 3990,
+    "video_call": 4093,
+    "streaming": 4212,
+    "web": 64409,
+    "bulk": 24721,
+    "upload": 21239
+  },
+  "data": [
+    "data/flows_sim.npz"
+  ]
+}
