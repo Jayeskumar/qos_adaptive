@@ -15,7 +15,8 @@ from ..common.jsonio import write_json
 from .runner import run_sim
 from .scenarios import SCENARIO_ORDER
 
-DEFAULT_SCHEDULERS = ["fifo", "static_qos", "fq_codel", "cake", "cake_autorate", "flowpilot", "flowpilot_fq"]
+DEFAULT_SCHEDULERS = ["fifo", "static_qos", "fq_codel", "cake", "cake_autorate", "flowpilot", "flowpilot_fq",
+                      "flowpilot_rl"]
 
 
 def _job(args):

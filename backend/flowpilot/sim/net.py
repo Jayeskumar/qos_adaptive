@@ -6,6 +6,7 @@ busy, and hands them to `next_hop` after the propagation delay.
 """
 from __future__ import annotations
 
+import zlib
 from typing import Callable, Optional
 
 from .engine import Sim
@@ -41,7 +42,9 @@ class Flow:
         self.app_type = app_type  # ground truth (never shown to the controller)
         self.app_id = app_id
         self.tc = 0  # traffic class assigned by the controller (0 = unassigned)
-        self.hash = hash((proto, lan_ip, lan_port, wan_ip, wan_port)) & 0x7FFFFFFF
+        # deterministic 5-tuple hash (Python's str hash is randomised per process, which made
+        # fq_codel's queue collisions - and so its results - differ between benchmark runs)
+        self.hash = zlib.crc32(f"{proto}|{lan_ip}|{lan_port}|{wan_ip}|{wan_port}".encode()) & 0x7FFFFFFF
         self.prop_delay = prop_delay  # one-way Internet path delay beyond the ISP edge
         self.recv_down: Optional[Callable[["Packet"], None]] = None
         self.recv_up: Optional[Callable[["Packet"], None]] = None

@@ -190,7 +190,7 @@ KERNEL_ROWS = [("game_rtt_p99_ms", "game RTT p99 (ms)"), ("call_owd_p99_ms", "ca
                ("slo_ok_pct", "seconds within SLO (%)"), ("qoe_fairness", "QoE fairness F")]
 
 
-def kernel(kagg: dict, sagg: dict) -> str:
+def kernel(kagg: dict, sagg: dict, runs_note: str = "one run per cell") -> str:
     scheds = [s for s in KERNEL_POLICIES if any(k[1] == s for k in kagg)]
     lines = ["| Scenario | Metric | " + " | ".join(SHORT_SCHED[s] for s in scheds) + " | *FlowPilot in the twin* |",
              "|---|---|" + "|".join("---:" for _ in scheds) + "|---:|"]
@@ -205,7 +205,7 @@ def kernel(kagg: dict, sagg: dict) -> str:
             twin = mean(sagg, sc, "flowpilot", k)
             lines.append(f"| {SHORT_SCEN[sc]} | {label} | " + " | ".join(bold_if(fmt(k, v), best) for v in vals)
                          + f" | *{fmt(k, twin)}* |")
-    return "\n".join(lines) + "\n\n<sub>Real Linux kernel testbed, one run per cell; best kernel value per row in " \
+    return "\n".join(lines) + f"\n\n<sub>Real Linux kernel testbed, {runs_note}; best kernel value per row in " \
                               "bold; last column: the digital twin's FlowPilot (mean of 3 seeds) for comparison.</sub>\n"
 
 
@@ -252,14 +252,21 @@ def accuracy(res: list, scheds=FP_FAMILY) -> dict:
             "byte_accuracy_min": float(np.min(byte)) if byte else None, "confusion": conf}
 
 
+APP_ORDER = ["gaming", "video_call", "streaming", "web", "bulk", "upload"]
+APP_NAME = {"gaming": "game", "video_call": "video call", "streaming": "video streaming", "web": "web",
+            "bulk": "download", "upload": "upload / backup"}
+
+
 def accuracy_md(acc: dict) -> str:
     conf = acc["confusion"]
-    labels = sorted({l for row in conf.values() for l in row} | set(conf))
-    lines = ["| true \\ label | " + " | ".join(labels) + " | flows | recall |", "|---|" + "---:|" * (len(labels) + 2)]
-    for t in sorted(conf):
+    seen = {l for row in conf.values() for l in row} | set(conf)
+    labels = [a for a in APP_ORDER if a in seen] + sorted(seen - set(APP_ORDER))
+    lines = ["| true \\ labelled as | " + " | ".join(APP_NAME.get(l, l) for l in labels) + " | flows | recall |",
+             "|---|" + "---:|" * (len(labels) + 2)]
+    for t in [a for a in labels if a in conf]:
         row = conf[t]
         n = sum(row.values())
-        lines.append(f"| {t} | " + " | ".join(str(row.get(l, 0)) for l in labels)
+        lines.append(f"| {APP_NAME.get(t, t)} | " + " | ".join(str(row.get(l, 0)) for l in labels)
                      + f" | {n} | {row.get(t, 0) / n * 100:.0f} % |")
     return "\n".join(lines)
 
