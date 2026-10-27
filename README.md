@@ -32,13 +32,27 @@ Measured on the **real Linux kernel testbed** — network namespaces, real kerne
 real qdiscs — in the *evening rush* (game + Teams call + 4K Netflix + browsing while a Steam
 update opens 8 TCP connections on a 50/10 Mb/s plan with a 250 ms ISP buffer):
 
-{{README_KERNEL_TABLE}}
+| | Standard router | **FlowPilot** |
+|---|---|---|
+| Game round-trip time p50 / p99 | 240 / 277 ms | **28 / 44 ms** |
+| Teams call one-way delay p99 | 271 ms | **39 ms** |
+| Call video frames arriving too late | 25.7 % | **0.1 %** |
+| Call voice quality (E-model MOS, 1-5) | 2.93 | **4.31** |
+| Web page load (median) | 2.52 s | **1.16 s** |
+| Netflix bitrate | 7.6 Mb/s | **14.1 Mb/s** (4K) |
+| Game and call seconds within SLO | 6 % | **99 %** |
+| Download throughput (lower effort, by design) | 42.4 Mb/s | 23.6 Mb/s |
+
+<sub>Real Linux kernel, mean of 2 runs. FlowPilot identified 94 % of all flows (99.81 % of bytes) across its 12 kernel runs, from packet timing and sizes only.</sub>
 
 Across all six scenarios of the digital twin (8 routers × 3 seeds), against the standard router:
 
 | | Standard router | FlowPilot |
 |---|---|---|
-{{README_SUMMARY_ROWS}}
+| Game RTT p99 | 279 – 937 ms | **40 – 100 ms** (−83 to −92 %) |
+| Call one-way delay p99 | 272 – 921 ms | **33 – 86 ms** (−85 to −94 %) |
+| Game and call seconds within SLO | 5 – 17 % | **85 – 100 %** |
+| Interactive QoE, MOS 1-5 | 1.53 – 2.49 | **4.01 – 4.78** |
 
 Against fq_codel, CAKE and CAKE + autorate FlowPilot is equivalent on a stable link, an order
 of magnitude better than any fixed-rate shaper when the ISP's capacity changes, and the only

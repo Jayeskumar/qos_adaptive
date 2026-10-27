@@ -49,10 +49,11 @@ reductions are per scenario):
 | | Standard router | **FlowPilot** |
 |---|---|---|
 {{SUMMARY_ROWS}}
-| Call packets lost / video frames late (digital twin) | 0.02-0.11 % / 21-75 % | **0.00-0.01 % / 0-1.4 %** |
+| Call packets lost (digital twin) | 0.02 – 0.11 % | **0.00 – 0.01 %** |
+| Call video frames arriving too late (digital twin / real kernel) | 21 – 75 % / {{K_FIFO_LATE_T}} % | **0 – 1.4 % / {{K_FP_LATE_T}} %** |
 | Netflix time rebuffering (digital twin) | up to 34 % | **0 %** |
-| Fairness between devices, Jain index (16 vs 1 connection) | 0.57 | **0.98** |
-| QoE fairness F across all apps (digital twin) | 0.23-0.35 | **0.71-0.85** |
+| Fairness between devices, Jain index, 16 vs 1 connection (twin / kernel) | 0.57 / {{K_FIFO_JAIN}} | **0.98 / {{K_FP_JAIN}}** |
+| QoE fairness F across all apps (twin / kernel) | 0.23 – 0.35 / {{K_FIFO_F}} | **0.71 – 0.85 / {{K_FP_F}}** |
 
 Against the strongest open-source alternative (**CAKE + autorate**, which needs CAKE in the
 kernel), FlowPilot is within 6 ms on latency when the ISP's capacity changes, keeps video

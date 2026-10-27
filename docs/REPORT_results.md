@@ -52,8 +52,8 @@ packet loss, and the share of the call's video frames that arrived late or incom
   frames arrive too late** and Netflix rebuffers up to a third of the time (download hog).
 * **AQM trades delay for drops.** When a call shares a queue with bulk traffic — fq_codel
   in the upload storm, WFH sync and download hog; CAKE and CAKE + autorate in WFH sync,
-  where call and sync share a host — CoDel **drops 1.8-2.3 % of the call's packets** and
-  11.8-14.1 % of its frames still arrive late.
+  where call and sync share a host — CoDel **drops 1.8-2.2 % of the call's packets** and
+  11.6-14.1 % of its frames still arrive late.
 * **FlowPilot: 0.00 % call packet loss in five scenarios and 0.01 % under FWA fading, no
   late frames except 1.4 % during deep FWA fades, and zero rebuffering everywhere.** The
   call never shares a queue with a bulk flow, so nothing has to be dropped to keep it fast.
@@ -108,7 +108,7 @@ for as long as the download runs; FlowPilot and CAKE stay near the base RTT.*
 while the call (orange) and Netflix's ON/OFF segment fetches (yellow) get what they need.*
 
 **Upload storm.** A 10 Mb/s uplink with four photo-backup uploads. FIFO: 548 / 522 ms.
-fq_codel keeps the game low (its flow is sparse) but not the call (137 ms), which is *not*
+fq_codel keeps the game low (its flow is sparse) but not the call (139 ms), which is *not*
 sparse: as one flow among five it is offered ~1.9 Mb/s of a 9.5 Mb/s uplink but needs 3.
 CAKE's host isolation helps (68 ms) because the backup runs on a different device. FlowPilot
 guarantees the call its measured peak: 37 ms, MOS 4.32, SLO 100 %. Pure TCP ACKs ride in the
