@@ -21,7 +21,7 @@ evaluation methodology, every result, the demo script and the deployment path.
 |---|---|
 | **Data plane** (real Linux) | HTB tree per direction, per-class time-bounded queues (or fq_codel), nftables + conntrack-mark classification, DSCP marking for Wi-Fi WMM / NQB. Needs only HTB — works on embedded CPE kernels that lack CAKE. |
 | **Telemetry** | AF_PACKET flow monitor (headers only), `tc` class counters, 20 Hz reflector probes with kernel timestamps (one-way delay both directions). |
-| **Learning** | Gradient-boosted flow classifier on 26 behavioural features (99.7 % accuracy on unseen households, 94 % on real-kernel flows it never trained on); online per-class demand learning; per-device profiles in PostgreSQL; residual-DQN autorate agent with a safety shield. |
+| **Learning** | Gradient-boosted flow classifier on 26 behavioural features (99.7 % accuracy on unseen households; 93 % of real-kernel flows and 99.62 % of their bytes, never having seen real traffic); online per-class demand learning; per-device profiles in PostgreSQL; residual-DQN autorate agent with a safety shield. |
 | **Control** | Network-utility-maximisation allocator (inelastic first, then weighted proportional fairness), delay-based capacity tracking, RFC 9956-style traffic protection, household intents (gaming / work-from-home / movie night), plain-language decision log. |
 | **Evaluation** | Packet-level digital twin (CUBIC TCP, FQ-CoDel/CAKE/HTB models) **and** a real-kernel Linux testbed (network namespaces, real TCP/UDP, TUN delay line), the same 6 scenarios on both, 8 router policies, QoE models (E-model MOS, gaming, P.1203-style video, G.1030 web), Jain + QoE fairness. |
 | **Product** | FastAPI (REST + WebSocket), PostgreSQL (SQLite fallback), React dashboard with a live A/B mode: *same household, same congestion — standard router vs FlowPilot*. |
@@ -34,16 +34,16 @@ update opens 8 TCP connections on a 50/10 Mb/s plan with a 250 ms ISP buffer):
 
 | | Standard router | **FlowPilot** |
 |---|---|---|
-| Game round-trip time p50 / p99 | 240 / 277 ms | **28 / 44 ms** |
-| Teams call one-way delay p99 | 271 ms | **39 ms** |
+| Game round-trip time p50 / p99 | 240 / 277 ms | **28 / 45 ms** |
+| Teams call one-way delay p99 | 271 ms | **40 ms** |
 | Call video frames arriving too late | 25.7 % | **0.1 %** |
 | Call voice quality (E-model MOS, 1-5) | 2.93 | **4.31** |
-| Web page load (median) | 2.52 s | **1.16 s** |
+| Web page load (median) | 2.52 s | **1.10 s** |
 | Netflix bitrate | 7.6 Mb/s | **14.1 Mb/s** (4K) |
 | Game and call seconds within SLO | 6 % | **99 %** |
-| Download throughput (lower effort, by design) | 42.4 Mb/s | 23.6 Mb/s |
+| Download throughput (lower effort, by design) | 42.4 Mb/s | 23.5 Mb/s |
 
-<sub>Real Linux kernel, mean of 2 runs. FlowPilot identified 94 % of all flows (99.81 % of bytes) across its 12 kernel runs, from packet timing and sizes only.</sub>
+<sub>Real Linux kernel, mean of 2 runs. FlowPilot identified 93 % of all flows (99.62 % of bytes) across its 24 kernel runs, from packet timing and sizes only.</sub>
 
 Across all six scenarios of the digital twin (8 routers × 3 seeds), against the standard router:
 
@@ -82,7 +82,7 @@ docker compose up --build                              # http://localhost:8000
 ```bash
 sudo ./scripts/setup_testbed.sh                        # installs iproute2/nftables/conntrack, checks the kernel
 sudo -E ./scripts/run_demo.sh                          # the dashboard now offers "Linux testbed" mode
-sudo python -m flowpilot.bench.kernel_runner --scenario evening_rush --scheduler flowpilot
+cd backend && sudo python3 -m flowpilot.bench.kernel_runner --scenario evening_rush --scheduler flowpilot
 ```
 
 Then open the dashboard, keep **Compare with: Standard router (FIFO)**, press **Start session**,
@@ -117,4 +117,5 @@ python -m pytest -q                        # 15 tests
 
 ## License
 
-MIT for the code in this repository. Third-party standards and papers are cited in the report.
+No license file has been added yet, so the code is not yet licensed for reuse; add one (e.g. MIT)
+before publishing. Third-party standards and papers are cited in the report.

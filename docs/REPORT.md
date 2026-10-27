@@ -19,7 +19,7 @@ broadband traffic"*
    bulk download, cloud backup — from packet *timing and size patterns only* (no payload
    inspection, no port lists; works on encrypted traffic), with a gradient-boosted model
    that is **99.7 % accurate on households it has never seen** and that labelled
-   **94 % of real Linux kernel flows (99.81 % of bytes) correctly without ever
+   **93 % of real Linux kernel flows (99.62 % of bytes) correctly without ever
    being trained on real traffic**;
 2. **learns how much each one needs** — burst peaks of calls, the bitrate a video player
    settles on, whether a download could use more — and remembers it per device in
@@ -52,15 +52,15 @@ reductions are per scenario):
 | Call one-way delay p99 (digital twin) | 272 – 921 ms | **33 – 86 ms** (−85 to −94 %) |
 | Game and call seconds within SLO (digital twin) | 5 – 17 % | **85 – 100 %** |
 | Interactive QoE, MOS 1-5 (digital twin) | 1.53 – 2.49 | **4.01 – 4.78** |
-| Game RTT p99 (real kernel) | 277 – 1123 ms | **30 – 92 ms** (−84 to −94 %) |
-| Call one-way delay p99 (real kernel) | 271 – 1116 ms | **25 – 80 ms** (−85 to −95 %) |
-| Game and call seconds within SLO (real kernel) | 0 – 17 % | **87 – 99 %** |
-| Interactive QoE, MOS 1-5 (real kernel) | 1.55 – 2.81 | **4.13 – 4.79** |
+| Game RTT p99 (real kernel) | 277 – 952 ms | **31 – 95 ms** (−84 to −94 %) |
+| Call one-way delay p99 (real kernel) | 271 – 945 ms | **26 – 88 ms** (−84 to −95 %) |
+| Game and call seconds within SLO (real kernel) | 0 – 17 % | **86 – 99 %** |
+| Interactive QoE, MOS 1-5 (real kernel) | 1.52 – 2.57 | **4.08 – 4.78** |
 | Call packets lost (digital twin) | 0.02 – 0.11 % | **0.00 – 0.01 %** |
-| Call video frames arriving too late (digital twin / real kernel) | 21 – 75 % / 26 – 84 % | **0 – 1.4 % / 0.0 – 0.2 %** |
+| Call video frames arriving too late (digital twin / real kernel) | 21 – 75 % / 26 – 85 % | **0 – 1.4 % / 0.0 – 0.2 %** |
 | Netflix time rebuffering (digital twin) | up to 34 % | **0 %** |
-| Fairness between devices, Jain index, 16 vs 1 connection (twin / kernel) | 0.57 / 0.57 | **0.98 / 0.95** |
-| QoE fairness F across all apps (twin / kernel) | 0.23 – 0.35 / 0.23 – 0.36 | **0.71 – 0.85 / 0.70 – 0.85** |
+| Fairness between devices, Jain index, 16 vs 1 connection (twin / kernel) | 0.57 / 0.56 | **0.98 / 0.95** |
+| QoE fairness F across all apps (twin / kernel) | 0.23 – 0.35 / 0.23 – 0.35 | **0.71 – 0.85 / 0.70 – 0.85** |
 
 Against the strongest open-source alternative (**CAKE + autorate**, which needs CAKE in the
 kernel), FlowPilot is within 6 ms on latency when the ISP's capacity changes, keeps video
@@ -384,7 +384,7 @@ are held out**, so the score measures generalisation to unseen homes.
   inter-arrival regularity, transport protocol.
 * **Sim-to-real transfer:** trained *only* on simulated traffic, the model labelled the
   flows of the real Linux testbed — real kernel CUBIC, real sockets, real timing —
-  at **94 % of flows and 99.81 % of bytes** across all 12 FlowPilot kernel runs (703/749 flows); every miss is a web connection labelled bulk (§7.7).
+  at **93 % of flows and 99.62 % of bytes** across all 24 FlowPilot kernel runs (1490/1608 flows); every miss is a web connection labelled bulk (§7.7).
 
 #### 4.4.5 Making it robust online
 
@@ -856,54 +856,54 @@ are the same code as in the twin; the classifier labels flows from packet header
 on the router and **has never seen real traffic**. The testbed VM's kernel has no fq_codel,
 CAKE or netem, so the routers are the standard router (FIFO), static QoS (HTB with port
 rules), FlowPilot and FlowPilot + RL. Each cell is the mean of 2 complete runs of
-the scenario in real time (26 runs, 0.7 hours of traffic).
+the scenario in real time (48 runs, 1.3 hours of traffic).
 
 | Scenario | Metric | FIFO | static QoS | FlowPilot | FlowPilot + RL | *FlowPilot in the twin* |
 |---|---|---:|---:|---:|---:|---:|
-| Evening rush | game RTT p99 (ms) | 277 | 70 | **44** | **44** | *48* |
-| Evening rush | call one-way delay p99 (ms) | 271 | 64 | 39 | **38** | *41* |
+| Evening rush | game RTT p99 (ms) | 277 | 70 | **45** | **45** | *48* |
+| Evening rush | call one-way delay p99 (ms) | 271 | 64 | 40 | **39** | *41* |
 | Evening rush | call video frames late (%) | 25.7 | **0.0** | 0.1 | 0.1 | *0.0* |
-| Evening rush | web page load p50 (s) | 2.52 | 1.29 | **1.16** | 1.36 | *0.63* |
+| Evening rush | web page load p50 (s) | 2.52 | 1.29 | **1.10** | 1.19 | *0.63* |
 | Evening rush | Netflix bitrate (Mb/s) | 7.6 | 7.0 | **14.1** | **14.1** | *14.1* |
-| Evening rush | interactive MOS (1-5) | 2.57 | 4.10 | **4.39** | 4.35 | *4.62* |
+| Evening rush | interactive MOS (1-5) | 2.57 | 4.10 | **4.41** | 4.39 | *4.62* |
 | Evening rush | seconds within SLO (%) | 6 | 96 | **99** | **99** | *100* |
-| Evening rush | QoE fairness F | 0.35 | 0.72 | **0.78** | 0.75 | *0.81* |
-| Upload storm | game RTT p99 (ms) | 603 | 93 | **34** | **34** | *45* |
-| Upload storm | call one-way delay p99 (ms) | 520 | 87 | **29** | **29** | *37* |
-| Upload storm | call video frames late (%) | 78.3 | 2.6 | **0.0** | **0.0** | *0.0* |
-| Upload storm | web page load p50 (s) | 3.93 | 3.35 | **0.49** | 0.53 | *0.52* |
-| Upload storm | interactive MOS (1-5) | 1.55 | 3.28 | **4.79** | 4.76 | *4.74* |
-| Upload storm | seconds within SLO (%) | 15 | 50 | **99** | **99** | *100* |
-| Upload storm | QoE fairness F | 0.24 | 0.59 | **0.80** | **0.80** | *0.82* |
-| WFH sync | game RTT p99 (ms) | 527 | 118 | **30** | 31 | *40* |
-| WFH sync | call one-way delay p99 (ms) | 521 | 113 | **25** | **25** | *33* |
-| WFH sync | call video frames late (%) | 81.1 | **0.0** | **0.0** | **0.0** | *0.0* |
-| WFH sync | web page load p50 (s) | 3.96 | 3.20 | **0.29** | **0.29** | *0.37* |
-| WFH sync | interactive MOS (1-5) | 1.57 | 3.24 | **4.79** | 4.78 | *4.78* |
-| WFH sync | seconds within SLO (%) | 17 | 53 | **99** | **99** | *100* |
-| WFH sync | QoE fairness F | 0.23 | 0.58 | **0.85** | **0.85** | *0.85* |
-| ISP congestion | game RTT p99 (ms) | 594 | 594 | 86 | **70** | *71* |
-| ISP congestion | call one-way delay p99 (ms) | 588 | 588 | 80 | **64** | *63* |
-| ISP congestion | call video frames late (%) | 55.5 | 35.2 | **0.1** | **0.1** | *0.0* |
-| ISP congestion | web page load p50 (s) | 3.31 | 1.26 | **0.85** | 1.22 | *0.95* |
-| ISP congestion | Netflix bitrate (Mb/s) | 4.4 | 6.5 | 11.5 | **11.6** | *11.5* |
-| ISP congestion | interactive MOS (1-5) | 2.18 | 2.80 | **4.32** | 4.21 | *4.30* |
-| ISP congestion | seconds within SLO (%) | 1 | 55 | 94 | **95** | *96* |
-| ISP congestion | QoE fairness F | 0.35 | 0.40 | **0.78** | 0.77 | *0.76* |
-| Download hog | call one-way delay p99 (ms) | 271 | 73 | **42** | 47 | *41* |
-| Download hog | call video frames late (%) | 50.7 | **0.0** | **0.0** | **0.0** | *0.0* |
-| Download hog | Netflix bitrate (Mb/s) | 5.1 | 6.1 | **13.8** | **13.8** | *13.8* |
-| Download hog | interactive MOS (1-5) | 2.81 | 3.80 | **4.31** | **4.31** | *4.36* |
-| Download hog | seconds within SLO (%) | 0 | 95 | **99** | **99** | *100* |
-| Download hog | QoE fairness F | 0.36 | 0.34 | 0.74 | **0.77** | *0.82* |
-| 5G FWA | game RTT p99 (ms) | 1123 | 1193 | 92 | **86** | *100* |
-| 5G FWA | call one-way delay p99 (ms) | 1116 | 1181 | **80** | 82 | *86* |
-| 5G FWA | call video frames late (%) | 84.2 | 92.0 | **0.2** | 0.6 | *1.4* |
-| 5G FWA | web page load p50 (s) | 4.57 | 4.95 | 1.24 | **1.17** | *1.31* |
-| 5G FWA | Netflix bitrate (Mb/s) | 7.0 | 6.2 | 11.9 | **12.2** | *11.9* |
-| 5G FWA | interactive MOS (1-5) | 1.96 | 1.85 | **4.13** | 4.12 | *4.01* |
-| 5G FWA | seconds within SLO (%) | 3 | 1 | **87** | **87** | *85* |
-| 5G FWA | QoE fairness F | 0.29 | 0.27 | 0.70 | **0.73** | *0.71* |
+| Evening rush | QoE fairness F | 0.35 | 0.72 | **0.79** | 0.77 | *0.81* |
+| Upload storm | game RTT p99 (ms) | 603 | 93 | **35** | 36 | *45* |
+| Upload storm | call one-way delay p99 (ms) | 520 | 85 | **31** | **31** | *37* |
+| Upload storm | call video frames late (%) | 79.8 | 2.6 | **0.1** | **0.1** | *0.0* |
+| Upload storm | web page load p50 (s) | 4.18 | 3.59 | 0.57 | **0.52** | *0.52* |
+| Upload storm | interactive MOS (1-5) | 1.52 | 3.21 | 4.72 | **4.76** | *4.74* |
+| Upload storm | seconds within SLO (%) | 14 | 49 | **99** | **99** | *100* |
+| Upload storm | QoE fairness F | 0.23 | 0.57 | **0.81** | 0.80 | *0.82* |
+| WFH sync | game RTT p99 (ms) | 527 | 126 | **31** | **31** | *40* |
+| WFH sync | call one-way delay p99 (ms) | 521 | 121 | **26** | **26** | *33* |
+| WFH sync | call video frames late (%) | 81.0 | **0.0** | 0.1 | **0.0** | *0.0* |
+| WFH sync | web page load p50 (s) | 4.07 | 3.36 | **0.31** | **0.31** | *0.37* |
+| WFH sync | interactive MOS (1-5) | 1.56 | 3.20 | **4.78** | **4.78** | *4.78* |
+| WFH sync | seconds within SLO (%) | 17 | 50 | **99** | **99** | *100* |
+| WFH sync | QoE fairness F | 0.23 | 0.57 | **0.85** | **0.85** | *0.85* |
+| ISP congestion | game RTT p99 (ms) | 594 | 594 | 80 | **66** | *71* |
+| ISP congestion | call one-way delay p99 (ms) | 588 | 588 | 74 | **60** | *63* |
+| ISP congestion | call video frames late (%) | 54.9 | 35.4 | **0.0** | **0.0** | *0.0* |
+| ISP congestion | web page load p50 (s) | 3.64 | 1.44 | **0.90** | 1.11 | *0.95* |
+| ISP congestion | Netflix bitrate (Mb/s) | 4.8 | 6.4 | 11.5 | **11.6** | *11.5* |
+| ISP congestion | interactive MOS (1-5) | 2.14 | 2.75 | **4.30** | 4.24 | *4.30* |
+| ISP congestion | seconds within SLO (%) | 3 | 56 | 94 | **96** | *96* |
+| ISP congestion | QoE fairness F | 0.34 | 0.40 | **0.78** | 0.77 | *0.76* |
+| Download hog | call one-way delay p99 (ms) | 271 | 76 | **42** | 45 | *41* |
+| Download hog | call video frames late (%) | 48.3 | **0.0** | **0.0** | 0.1 | *0.0* |
+| Download hog | Netflix bitrate (Mb/s) | 5.5 | 5.8 | **13.8** | **13.8** | *13.8* |
+| Download hog | interactive MOS (1-5) | 2.38 | 3.79 | **4.32** | **4.32** | *4.36* |
+| Download hog | seconds within SLO (%) | 0 | 94 | **99** | 98 | *100* |
+| Download hog | QoE fairness F | 0.32 | 0.34 | 0.75 | **0.77** | *0.82* |
+| 5G FWA | game RTT p99 (ms) | 952 | 989 | 95 | **91** | *100* |
+| 5G FWA | call one-way delay p99 (ms) | 945 | 980 | 88 | **86** | *86* |
+| 5G FWA | call video frames late (%) | 84.9 | 89.0 | **0.2** | 0.3 | *1.4* |
+| 5G FWA | web page load p50 (s) | 4.33 | 4.53 | 1.34 | **1.32** | *1.31* |
+| 5G FWA | Netflix bitrate (Mb/s) | 6.7 | 6.4 | 11.8 | **12.2** | *11.9* |
+| 5G FWA | interactive MOS (1-5) | 1.95 | 1.91 | **4.08** | **4.08** | *4.01* |
+| 5G FWA | seconds within SLO (%) | 2 | 1 | 86 | **88** | *85* |
+| 5G FWA | QoE fairness F | 0.28 | 0.27 | **0.70** | **0.70** | *0.71* |
 
 <sub>Real Linux kernel testbed, mean of 2 runs per cell; best kernel value per row in bold; last column: the digital twin's FlowPilot (mean of 3 seeds) for comparison.</sub>
 
@@ -911,32 +911,32 @@ the scenario in real time (26 runs, 0.7 hours of traffic).
 **What this says.**
 
 * **The improvement holds on real Linux.** Against the standard router, FlowPilot cuts the
-  99th-percentile game RTT from 277–1123 ms to **30–92 ms** (−84 to −94 %)
-  and the call's one-way delay from 271–1116 ms to **25–80 ms**
-  (−85 to −95 %) in every scenario. The share of game and call seconds within SLO rises
-  from 0–17 % to **87–99 %**, interactive MOS from 1.55–2.81 to
-  **4.13–4.79**, and the call's late video frames fall from 26–84 % to
+  99th-percentile game RTT from 277–952 ms to **31–95 ms** (−84 to −94 %)
+  and the call's one-way delay from 271–945 ms to **26–88 ms**
+  (−84 to −95 %) in every scenario. The share of game and call seconds within SLO rises
+  from 0–17 % to **86–99 %**, interactive MOS from 1.52–2.57 to
+  **4.08–4.78**, and the call's late video frames fall from 26–85 % to
   **0.0–0.2 %**.
 * **Port-based QoS is not enough.** Static QoS (port rules + a fixed 95 % shaper) helps on
-  a stable link (game p99 70–118 ms) but not as much as FlowPilot, and it
+  a stable link (game p99 70–126 ms) but not as much as FlowPilot, and it
   collapses as soon as the ISP's capacity moves: 594 ms under ISP congestion and
-  1193 ms under 5G FWA fading, where FlowPilot stays at 86 and
-  92 ms — exactly the fixed-shaper failure the digital twin predicts.
+  989 ms under 5G FWA fading, where FlowPilot stays at 80 and
+  95 ms — exactly the fixed-shaper failure the digital twin predicts.
 * **Application awareness, measured:** Netflix streams at 13.8–14.1 Mb/s beside a
-  Steam update or a 16-connection download (standard router 5.1–7.6 Mb/s), and the
-  call on the syncing laptop keeps a p99 of 25 ms (standard router
-  521 ms, static QoS 113 ms).
+  Steam update or a 16-connection download (standard router 5.5–7.6 Mb/s), and the
+  call on the syncing laptop keeps a p99 of 26 ms (standard router
+  521 ms, static QoS 121 ms).
 * **FlowPilot + RL** is within run-to-run noise of the heuristic on stable links and slightly
-  better on the variable ones (ISP congestion and FWA game p99 70 / 86 ms
-  vs 86 / 92 ms), consistent with the twin (§7.8).
+  better on the variable ones (ISP congestion and FWA game p99 66 / 91 ms
+  vs 80 / 95 ms), consistent with the twin (§7.8).
 * **The twin predicts the kernel** (Figure 3): across every scenario × router cell run on
-  both, the 99th-percentile latencies differ by a median of 14 % and interactive MOS by
-  0.12 on average, over a range from 25 ms to more than 1 s. That agreement is what
+  both, the 99th-percentile latencies differ by a median of 4 % and interactive MOS by
+  0.09 on average, over a range from 25 ms to about 1 s. That agreement is what
   lets us trust the twin for the routers this kernel cannot run (fq_codel, CAKE).
 * **Where real Linux differs: web page loads.** On the kernel, FlowPilot's median page
-  load in the evening rush is 1.16 s against 0.63 s in the twin
+  load in the evening rush is 1.10 s against 0.63 s in the twin
   (still the best of the four kernel routers; standard router 2.52 s). The
-  main cause is the sim-to-real gap of §7.7: 46 of the 621 real web connections (7 %) were labelled *Bulk* and waited
+  main cause is the sim-to-real gap of §7.7: 118 of the 1352 real web connections (9 %) were labelled *Bulk* and waited
   behind the download.
 
 **Packet loss and fairness on the real kernel.**
@@ -946,37 +946,37 @@ the scenario in real time (26 runs, 0.7 hours of traffic).
 | Evening rush | call packets lost (%) | **0.04** | **0.04** | **0.04** | **0.04** |
 | Evening rush | call video frames late (%) | 25.7 | **0.0** | 0.1 | 0.1 |
 | Evening rush | Netflix time rebuffering (%) | **0.0** | **0.0** | **0.0** | **0.0** |
-| Upload storm | call packets lost (%) | **0.05** | 1.02 | **0.05** | **0.05** |
-| Upload storm | call video frames late (%) | 78.3 | 2.6 | **0.0** | **0.0** |
-| WFH sync | call packets lost (%) | 0.23 | **0.05** | **0.05** | **0.05** |
-| WFH sync | call video frames late (%) | 81.1 | **0.0** | **0.0** | **0.0** |
-| ISP congestion | call packets lost (%) | 0.06 | **0.04** | **0.04** | **0.04** |
-| ISP congestion | call video frames late (%) | 55.5 | 35.2 | **0.1** | **0.1** |
+| Upload storm | call packets lost (%) | 0.07 | 1.05 | **0.05** | **0.05** |
+| Upload storm | call video frames late (%) | 79.8 | 2.6 | **0.1** | **0.1** |
+| WFH sync | call packets lost (%) | 0.19 | **0.05** | 0.08 | **0.05** |
+| WFH sync | call video frames late (%) | 81.0 | **0.0** | 0.1 | **0.0** |
+| ISP congestion | call packets lost (%) | 0.05 | **0.04** | **0.04** | **0.04** |
+| ISP congestion | call video frames late (%) | 54.9 | 35.4 | **0.0** | **0.0** |
 | ISP congestion | Netflix time rebuffering (%) | **0.0** | **0.0** | **0.0** | **0.0** |
-| Download hog | call packets lost (%) | 0.08 | **0.05** | **0.05** | **0.05** |
-| Download hog | call video frames late (%) | 50.7 | **0.0** | **0.0** | **0.0** |
-| Download hog | Netflix time rebuffering (%) | **0.0** | **0.0** | **0.0** | **0.0** |
-| 5G FWA | call packets lost (%) | **0.03** | 0.07 | **0.03** | 0.05 |
-| 5G FWA | call video frames late (%) | 84.2 | 92.0 | **0.2** | 0.6 |
+| Download hog | call packets lost (%) | 0.06 | **0.05** | **0.05** | **0.05** |
+| Download hog | call video frames late (%) | 48.3 | **0.0** | **0.0** | 0.1 |
+| Download hog | Netflix time rebuffering (%) | 6.4 | **0.0** | **0.0** | **0.0** |
+| 5G FWA | call packets lost (%) | 0.05 | 0.05 | **0.03** | 0.04 |
+| 5G FWA | call video frames late (%) | 84.9 | 89.0 | **0.2** | 0.3 |
 | 5G FWA | Netflix time rebuffering (%) | **0.0** | **0.0** | **0.0** | **0.0** |
 
 <sub>real Linux kernel, mean of 2 runs; best per row in bold.</sub>
 
 
-The call's network loss shows the same floor of ~0.04 % under every router — about two
-audio packets still in flight when the measurement stops — so on real Linux, too, the
-difference is in *late* frames: 26–84 % under the standard router,
-0.0–0.2 % under FlowPilot.
+Except for static QoS in the upload storm (about 1 %), the call's network loss stays between
+0.03 and 0.19 % under every router, FlowPilot included — largely a measurement floor of
+packets still in flight when a run stops. So on real Linux, too, the difference is in
+*late* frames: 26–85 % under the standard router, 0.0–0.2 % under FlowPilot.
 
 | Scenario | Metric | FIFO | static QoS | FlowPilot | FlowPilot + RL |
 |---|---|---:|---:|---:|---:|
-| Evening rush | QoE fairness F across all apps | 0.35 | 0.72 | **0.78** | 0.75 |
-| Upload storm | QoE fairness F across all apps | 0.24 | 0.59 | **0.80** | **0.80** |
-| WFH sync | QoE fairness F across all apps | 0.23 | 0.58 | **0.85** | **0.85** |
-| ISP congestion | QoE fairness F across all apps | 0.35 | 0.40 | **0.78** | 0.77 |
-| Download hog | QoE fairness F across all apps | 0.36 | 0.34 | 0.74 | **0.77** |
-| 5G FWA | QoE fairness F across all apps | 0.29 | 0.27 | 0.70 | **0.73** |
-| Download hog | Jain index, throughput of the 2 downloading devices | 0.57 | 0.56 | 0.95 | **0.96** |
+| Evening rush | QoE fairness F across all apps | 0.35 | 0.72 | **0.79** | 0.77 |
+| Upload storm | QoE fairness F across all apps | 0.23 | 0.57 | **0.81** | 0.80 |
+| WFH sync | QoE fairness F across all apps | 0.23 | 0.57 | **0.85** | **0.85** |
+| ISP congestion | QoE fairness F across all apps | 0.34 | 0.40 | **0.78** | 0.77 |
+| Download hog | QoE fairness F across all apps | 0.32 | 0.34 | 0.75 | **0.77** |
+| 5G FWA | QoE fairness F across all apps | 0.28 | 0.27 | **0.70** | **0.70** |
+| Download hog | Jain index, throughput of the 2 downloading devices | 0.56 | 0.56 | 0.95 | **0.96** |
 
 <sub>real Linux kernel, mean of 2 runs; best per row in bold.</sub>
 
@@ -1087,20 +1087,20 @@ ground truth:
 | Where | Runs | Correct / labelled flows | Flow accuracy | Byte accuracy (mean; worst run) |
 |---|---:|---:|---:|---:|
 | Digital twin (FlowPilot, + fq leaves, + RL; 6 scenarios × 3 seeds) | 54 | 3593/3594 | 99.97 % | > 99.99 %; 99.91 % |
-| Real Linux kernel (FlowPilot, + RL; 6 scenarios × 2 runs) | 12 | 703/749 | **93.9 %** | **99.81 %**; 99.63 % |
+| Real Linux kernel (FlowPilot, + RL; 6 scenarios × 2 runs) | 24 | 1490/1608 | **92.7 %** | **99.62 %**; 98.4 % |
 
 Real-kernel confusion matrix (rows: what the flow really was; columns: FlowPilot's label):
 
 | true \ labelled as | game | video call | video streaming | web | download | upload / backup | flows | recall |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| game | 10 | 0 | 0 | 0 | 0 | 0 | 10 | 100 % |
-| video call | 0 | 12 | 0 | 0 | 0 | 0 | 12 | 100 % |
-| video streaming | 0 | 0 | 8 | 0 | 0 | 0 | 8 | 100 % |
-| web | 0 | 0 | 0 | 575 | 46 | 0 | 621 | 93 % |
-| download | 0 | 0 | 0 | 0 | 82 | 0 | 82 | 100 % |
-| upload / backup | 0 | 0 | 0 | 0 | 0 | 16 | 16 | 100 % |
+| game | 20 | 0 | 0 | 0 | 0 | 0 | 20 | 100 % |
+| video call | 0 | 24 | 0 | 0 | 0 | 0 | 24 | 100 % |
+| video streaming | 0 | 0 | 16 | 0 | 0 | 0 | 16 | 100 % |
+| web | 0 | 0 | 0 | 1234 | 118 | 0 | 1352 | 91 % |
+| download | 0 | 0 | 0 | 0 | 164 | 0 | 164 | 100 % |
+| upload / backup | 0 | 0 | 0 | 0 | 0 | 32 | 32 | 100 % |
 
-On real traffic every game, video-call, video-streaming, download and upload flow was labelled correctly. All 46 misses are web connections labelled *Bulk*: 46 of the 621 real web connections (7 %). They carry little data — hence the 99.81 % byte accuracy — but a page load waits for its slowest connection — the main reason the kernel's page loads are slower than the twin's (§7.4). The digital twin makes it far more rarely (1 of 3018 web connections), so it is a sim-to-real gap in how real kernel TCP shapes short transfers; §10 lists the fix.
+On real traffic every game, video-call, video-streaming, download and upload flow was labelled correctly. All 118 misses are web connections labelled *Bulk*: 118 of the 1352 real web connections (9 %). They carry little data — hence the 99.62 % byte accuracy — but a page load waits for its slowest connection — the main reason the kernel's page loads are slower than the twin's (§7.4). The digital twin makes it far more rarely (1 of 3018 web connections), so it is a sim-to-real gap in how real kernel TCP shapes short transfers; §10 lists the fix.
 
 ### 7.8 Reinforcement-learning autorate
 
@@ -1241,15 +1241,16 @@ planning — all on existing CPE.
 * **Kernel testbed coverage.** Our VM kernel lacks fq_codel, CAKE and netem, so those
   baselines run only in the digital twin; the kernel runs compare FIFO, static QoS,
   FlowPilot and FlowPilot + RL. On a stock kernel the same harness runs them all. Each
-  kernel cell is the mean of two real-time runs; tail latencies vary between runs by
-  several ms (more for static QoS), so differences of a few ms between the FlowPilot
-  variants on the kernel are not significant.
+  kernel cell is the mean of two real-time runs; FlowPilot's game p99 differed between
+  the two runs by 2-11 ms (static QoS by up to 16 ms on the fixed-capacity scenarios), so
+  differences of a few ms between the FlowPilot variants on the kernel are not
+  significant.
 * **The cost is real.** Lower-effort bulk transfers get 3-39 % (typically ~20 %) less
   throughput than under CAKE + autorate in the contended scenarios — the price of
   protecting calls and 4K video. A household that wants the download first selects a
   different intent.
 * **Sim-to-real gap in classification.** On the real kernel a minority of web connections
-  (about one in twelve) is labelled *Bulk*, which slows the page loads they belong to
+  (9 % of them) is labelled *Bulk*, which slows the page loads they belong to
   (§7.4, §7.7). The simulator never shows this, so real kernel TCP makes some page fetches
   look like the start of a download. Next: a byte-volume grace period before a flow may be
   demoted to Bulk, and fine-tuning on real traces.
@@ -1566,8 +1567,8 @@ Real Linux kernel, mean of 2 runs per cell; generated by `python -m flowpilot.be
 |---|---:|---:|---:|---:|---:|---:|---:|
 | Standard router (FIFO) | 240 | 277 | **0.00** | 271 | **0.04** | 25.7 | 6 |
 | Static QoS (port rules) | **28** | 70 | **0.00** | 64 | **0.04** | **0.0** | 96 |
-| **FlowPilot (AI)** | **28** | **44** | **0.00** | 39 | **0.04** | 0.1 | **99** |
-| **FlowPilot + RL autorate** | **28** | **44** | **0.00** | **38** | **0.04** | 0.1 | **99** |
+| **FlowPilot (AI)** | **28** | **45** | **0.00** | 40 | **0.04** | 0.1 | **99** |
+| **FlowPilot + RL autorate** | **28** | **45** | **0.00** | **39** | **0.04** | 0.1 | **99** |
 
 <sub>real Linux kernel, mean of 2 runs; best value per column in bold.</sub>
 
@@ -1577,8 +1578,8 @@ Real Linux kernel, mean of 2 runs per cell; generated by `python -m flowpilot.be
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Standard router (FIFO) | 2.93 | 7.6 | **0.0** | 2.52 | 2.57 | 0.35 | **42.4** | **98** |
 | Static QoS (port rules) | 4.24 | 7.0 | **0.0** | 1.29 | 4.10 | 0.72 | 38.0 | 93 |
-| **FlowPilot (AI)** | 4.31 | **14.1** | **0.0** | **1.16** | **4.39** | **0.78** | 23.6 | 88 |
-| **FlowPilot + RL autorate** | **4.35** | **14.1** | **0.0** | 1.36 | 4.35 | 0.75 | 23.4 | 87 |
+| **FlowPilot (AI)** | 4.31 | **14.1** | **0.0** | **1.10** | **4.41** | **0.79** | 23.5 | 87 |
+| **FlowPilot + RL autorate** | **4.32** | **14.1** | **0.0** | 1.19 | 4.39 | 0.77 | 23.4 | 87 |
 
 <sub>real Linux kernel, mean of 2 runs; best value per column in bold.</sub>
 
@@ -1590,10 +1591,10 @@ Real Linux kernel, mean of 2 runs per cell; generated by `python -m flowpilot.be
 
 | Router | Game RTT p50 (ms) | Game RTT p99 (ms) | Game loss (%) | Call OWD p99 (ms) | Call loss (%) | Call frames late (%) | Within SLO (% s) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Standard router (FIFO) | 473 | 603 | 0.03 | 520 | **0.05** | 78.3 | 15 |
-| Static QoS (port rules) | 46 | 93 | 0.41 | 87 | 1.02 | 2.6 | 50 |
-| **FlowPilot (AI)** | **28** | **34** | **0.00** | **29** | **0.05** | **0.0** | **99** |
-| **FlowPilot + RL autorate** | **28** | **34** | **0.00** | **29** | **0.05** | **0.0** | **99** |
+| Standard router (FIFO) | 476 | 603 | 0.02 | 520 | 0.07 | 79.8 | 14 |
+| Static QoS (port rules) | 46 | 93 | 0.47 | 85 | 1.05 | 2.6 | 49 |
+| **FlowPilot (AI)** | **28** | **35** | **0.00** | **31** | **0.05** | **0.1** | **99** |
+| **FlowPilot + RL autorate** | **28** | 36 | **0.00** | **31** | **0.05** | **0.1** | **99** |
 
 <sub>real Linux kernel, mean of 2 runs; best value per column in bold.</sub>
 
@@ -1601,10 +1602,10 @@ Real Linux kernel, mean of 2 runs per cell; generated by `python -m flowpilot.be
 
 | Router | Call MOS | Web PLT p50 (s) | Interactive MOS | QoE fairness F | Download (Mb/s) | Upload (Mb/s) | Utilisation (%) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Standard router (FIFO) | 1.55 | 3.93 | 1.55 | 0.24 | 39.0 | **9.1** | 83 |
-| Static QoS (port rules) | 3.39 | 3.35 | 3.28 | 0.59 | **42.5** | 6.8 | 90 |
-| **FlowPilot (AI)** | **4.36** | **0.49** | **4.79** | **0.80** | 41.9 | 5.2 | **91** |
-| **FlowPilot + RL autorate** | 4.35 | 0.53 | 4.76 | **0.80** | 41.8 | 5.2 | 90 |
+| Standard router (FIFO) | 1.54 | 4.18 | 1.52 | 0.23 | 39.2 | **9.1** | 82 |
+| Static QoS (port rules) | 3.30 | 3.59 | 3.21 | 0.57 | **42.5** | 6.9 | **91** |
+| **FlowPilot (AI)** | **4.35** | 0.57 | 4.72 | **0.81** | 41.4 | 5.2 | 90 |
+| **FlowPilot + RL autorate** | 4.34 | **0.52** | **4.76** | 0.80 | 41.6 | 5.1 | 90 |
 
 <sub>real Linux kernel, mean of 2 runs; best value per column in bold.</sub>
 
@@ -1616,10 +1617,10 @@ Real Linux kernel, mean of 2 runs per cell; generated by `python -m flowpilot.be
 
 | Router | Game RTT p50 (ms) | Game RTT p99 (ms) | Game loss (%) | Call OWD p99 (ms) | Call loss (%) | Call frames late (%) | Within SLO (% s) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Standard router (FIFO) | 442 | 527 | 0.06 | 521 | 0.23 | 81.1 | 17 |
-| Static QoS (port rules) | 36 | 118 | **0.00** | 113 | **0.05** | **0.0** | 53 |
-| **FlowPilot (AI)** | **28** | **30** | **0.00** | **25** | **0.05** | **0.0** | **99** |
-| **FlowPilot + RL autorate** | **28** | 31 | **0.00** | **25** | **0.05** | **0.0** | **99** |
+| Standard router (FIFO) | 448 | 527 | 0.05 | 521 | 0.19 | 81.0 | 17 |
+| Static QoS (port rules) | 36 | 126 | **0.00** | 121 | **0.05** | **0.0** | 50 |
+| **FlowPilot (AI)** | **28** | **31** | **0.00** | **26** | 0.08 | 0.1 | **99** |
+| **FlowPilot + RL autorate** | **28** | **31** | **0.00** | **26** | **0.05** | **0.0** | **99** |
 
 <sub>real Linux kernel, mean of 2 runs; best value per column in bold.</sub>
 
@@ -1627,10 +1628,10 @@ Real Linux kernel, mean of 2 runs per cell; generated by `python -m flowpilot.be
 
 | Router | Call MOS | Web PLT p50 (s) | Interactive MOS | QoE fairness F | Upload (Mb/s) |
 |---|---:|---:|---:|---:|---:|
-| Standard router (FIFO) | 1.61 | 3.96 | 1.57 | 0.23 | **9.7** |
-| Static QoS (port rules) | 3.27 | 3.20 | 3.24 | 0.58 | 6.9 |
-| **FlowPilot (AI)** | **4.36** | **0.29** | **4.79** | **0.85** | 6.1 |
-| **FlowPilot + RL autorate** | 4.35 | **0.29** | 4.78 | **0.85** | 6.1 |
+| Standard router (FIFO) | 1.63 | 4.07 | 1.56 | 0.23 | **9.7** |
+| Static QoS (port rules) | 3.28 | 3.36 | 3.20 | 0.57 | 6.9 |
+| **FlowPilot (AI)** | 4.34 | **0.31** | **4.78** | **0.85** | 6.1 |
+| **FlowPilot + RL autorate** | **4.35** | **0.31** | **4.78** | **0.85** | 6.1 |
 
 <sub>real Linux kernel, mean of 2 runs; best value per column in bold.</sub>
 
@@ -1642,10 +1643,10 @@ Real Linux kernel, mean of 2 runs per cell; generated by `python -m flowpilot.be
 
 | Router | Game RTT p50 (ms) | Game RTT p99 (ms) | Game loss (%) | Call OWD p99 (ms) | Call loss (%) | Call frames late (%) | Within SLO (% s) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Standard router (FIFO) | 261 | 594 | **0.00** | 588 | 0.06 | 55.5 | 1 |
-| Static QoS (port rules) | 29 | 594 | **0.00** | 588 | **0.04** | 35.2 | 55 |
-| **FlowPilot (AI)** | **28** | 86 | **0.00** | 80 | **0.04** | **0.1** | 94 |
-| **FlowPilot + RL autorate** | **28** | **70** | **0.00** | **64** | **0.04** | **0.1** | **95** |
+| Standard router (FIFO) | 260 | 594 | **0.00** | 588 | 0.05 | 54.9 | 3 |
+| Static QoS (port rules) | 29 | 594 | **0.00** | 588 | **0.04** | 35.4 | 56 |
+| **FlowPilot (AI)** | **28** | 80 | **0.00** | 74 | **0.04** | **0.0** | 94 |
+| **FlowPilot + RL autorate** | **28** | **66** | **0.00** | **60** | **0.04** | **0.0** | **96** |
 
 <sub>real Linux kernel, mean of 2 runs; best value per column in bold.</sub>
 
@@ -1653,10 +1654,10 @@ Real Linux kernel, mean of 2 runs per cell; generated by `python -m flowpilot.be
 
 | Router | Call MOS | Netflix (Mb/s) | Rebuffering (%) | Web PLT p50 (s) | Interactive MOS | QoE fairness F | Download (Mb/s) | Utilisation (%) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Standard router (FIFO) | 2.23 | 4.4 | **0.0** | 3.31 | 2.18 | 0.35 | **34.8** | **99** |
-| Static QoS (port rules) | 3.01 | 6.5 | **0.0** | 1.26 | 2.80 | 0.40 | 28.8 | 94 |
-| **FlowPilot (AI)** | 4.14 | 11.5 | **0.0** | **0.85** | **4.32** | **0.78** | 16.1 | 84 |
-| **FlowPilot + RL autorate** | **4.19** | **11.6** | **0.0** | 1.22 | 4.21 | 0.77 | 16.0 | 84 |
+| Standard router (FIFO) | 2.16 | 4.8 | **0.0** | 3.64 | 2.14 | 0.34 | **34.3** | **99** |
+| Static QoS (port rules) | 3.01 | 6.4 | **0.0** | 1.44 | 2.75 | 0.40 | 29.0 | 94 |
+| **FlowPilot (AI)** | 4.14 | 11.5 | **0.0** | **0.90** | **4.30** | **0.78** | 15.8 | 83 |
+| **FlowPilot + RL autorate** | **4.18** | **11.6** | **0.0** | 1.11 | 4.24 | 0.77 | 15.9 | 84 |
 
 <sub>real Linux kernel, mean of 2 runs; best value per column in bold.</sub>
 
@@ -1668,10 +1669,10 @@ Real Linux kernel, mean of 2 runs per cell; generated by `python -m flowpilot.be
 
 | Router | Call OWD p99 (ms) | Call loss (%) | Call frames late (%) | Within SLO (% s) |
 |---|---:|---:|---:|---:|
-| Standard router (FIFO) | 271 | 0.08 | 50.7 | 0 |
-| Static QoS (port rules) | 73 | **0.05** | **0.0** | 95 |
+| Standard router (FIFO) | 271 | 0.06 | 48.3 | 0 |
+| Static QoS (port rules) | 76 | **0.05** | **0.0** | 94 |
 | **FlowPilot (AI)** | **42** | **0.05** | **0.0** | **99** |
-| **FlowPilot + RL autorate** | 47 | **0.05** | **0.0** | **99** |
+| **FlowPilot + RL autorate** | 45 | **0.05** | 0.1 | 98 |
 
 <sub>real Linux kernel, mean of 2 runs; best value per column in bold.</sub>
 
@@ -1679,10 +1680,10 @@ Real Linux kernel, mean of 2 runs per cell; generated by `python -m flowpilot.be
 
 | Router | Call MOS | Netflix (Mb/s) | Rebuffering (%) | Interactive MOS | QoE fairness F | Jain (devices) | Download (Mb/s) | Utilisation (%) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Standard router (FIFO) | 2.37 | 5.1 | **0.0** | 2.81 | 0.36 | 0.57 | **47.1** | **99** |
-| Static QoS (port rules) | 4.20 | 6.1 | **0.0** | 3.80 | 0.34 | 0.56 | 39.8 | 93 |
-| **FlowPilot (AI)** | **4.27** | **13.8** | **0.0** | **4.31** | 0.74 | 0.95 | 25.5 | 89 |
-| **FlowPilot + RL autorate** | 4.26 | **13.8** | **0.0** | **4.31** | **0.77** | **0.96** | 25.2 | 88 |
+| Standard router (FIFO) | 2.41 | 5.5 | 6.4 | 2.38 | 0.32 | 0.56 | **47.1** | **99** |
+| Static QoS (port rules) | 4.20 | 5.8 | **0.0** | 3.79 | 0.34 | 0.56 | 40.1 | 93 |
+| **FlowPilot (AI)** | 4.28 | **13.8** | **0.0** | **4.32** | 0.75 | 0.95 | 25.4 | 88 |
+| **FlowPilot + RL autorate** | **4.29** | **13.8** | **0.0** | **4.32** | **0.77** | **0.96** | 24.9 | 88 |
 
 <sub>real Linux kernel, mean of 2 runs; best value per column in bold.</sub>
 
@@ -1694,10 +1695,10 @@ Real Linux kernel, mean of 2 runs per cell; generated by `python -m flowpilot.be
 
 | Router | Game RTT p50 (ms) | Game RTT p99 (ms) | Game loss (%) | Call OWD p99 (ms) | Call loss (%) | Call frames late (%) | Within SLO (% s) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Standard router (FIFO) | 358 | 1123 | **0.00** | 1116 | **0.03** | 84.2 | 3 |
-| Static QoS (port rules) | 373 | 1193 | 0.01 | 1181 | 0.07 | 92.0 | 1 |
-| **FlowPilot (AI)** | **28** | 92 | **0.00** | **80** | **0.03** | **0.2** | **87** |
-| **FlowPilot + RL autorate** | **28** | **86** | **0.00** | 82 | 0.05 | 0.6 | **87** |
+| Standard router (FIFO) | 358 | 952 | **0.00** | 945 | 0.05 | 84.9 | 2 |
+| Static QoS (port rules) | 361 | 989 | 0.01 | 980 | 0.05 | 89.0 | 1 |
+| **FlowPilot (AI)** | **28** | 95 | **0.00** | 88 | **0.03** | **0.2** | 86 |
+| **FlowPilot + RL autorate** | **28** | **91** | **0.00** | **86** | 0.04 | 0.3 | **88** |
 
 <sub>real Linux kernel, mean of 2 runs; best value per column in bold.</sub>
 
@@ -1705,9 +1706,9 @@ Real Linux kernel, mean of 2 runs per cell; generated by `python -m flowpilot.be
 
 | Router | Call MOS | Netflix (Mb/s) | Rebuffering (%) | Web PLT p50 (s) | Interactive MOS | QoE fairness F | Download (Mb/s) | Utilisation (%) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Standard router (FIFO) | 1.40 | 7.0 | **0.0** | 4.57 | 1.96 | 0.29 | 26.7 | **98** |
-| Static QoS (port rules) | 1.20 | 6.2 | **0.0** | 4.95 | 1.85 | 0.27 | **27.6** | 97 |
-| **FlowPilot (AI)** | **4.15** | 11.9 | **0.0** | 1.24 | **4.13** | 0.70 | 9.6 | 78 |
-| **FlowPilot + RL autorate** | 3.99 | **12.2** | **0.0** | **1.17** | 4.12 | **0.73** | 10.2 | 81 |
+| Standard router (FIFO) | 1.34 | 6.7 | **0.0** | 4.33 | 1.95 | 0.28 | 27.5 | **101** |
+| Static QoS (port rules) | 1.25 | 6.4 | **0.0** | 4.53 | 1.91 | 0.27 | **27.9** | 99 |
+| **FlowPilot (AI)** | **4.11** | 11.8 | **0.0** | 1.34 | **4.08** | **0.70** | 9.7 | 77 |
+| **FlowPilot + RL autorate** | 4.02 | **12.2** | **0.0** | **1.32** | **4.08** | **0.70** | 9.7 | 79 |
 
 <sub>real Linux kernel, mean of 2 runs; best value per column in bold.</sub>
